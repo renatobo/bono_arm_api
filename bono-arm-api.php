@@ -6,6 +6,8 @@ Description: Exposes extended API endpoints for ARMember transactions including 
 Version: 1.0
 Author: Renato Bonomini
 Author URI: https://github.com/renatobo
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
 if (!defined('ABSPATH')) exit;
@@ -63,9 +65,20 @@ function bono_arm_api_settings_page() {
                             <br><br>
                             <strong>Examples:</strong><br>
                             Without pagination:<br>
-                            <code>?arm_invoice_id_gt=1450</code><br>
+                            <div class="api-example">
+                              <code id="example1"><?php echo get_site_url(); ?>/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450</code>
+                              <button class="copy-btn" onclick="copyToClipboard('example1')">Copy</button>
+                            </div>
                             With pagination and plan filter:<br>
-                            <code>?arm_invoice_id_gt=1450&arm_plan_id=2&arm_page=2&arm_perpage=25</code>
+                            <div class="api-example">
+                              <code id="example2"><?php echo get_site_url(); ?>/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450&amp;arm_plan_id=2&amp;arm_page=2&amp;arm_perpage=25</code>
+                              <button class="copy-btn" onclick="copyToClipboard('example2')">Copy</button>
+                            </div>
+                            Using curl from the command line:<br>
+                            <div class="api-example">
+                              <code id="example3">curl -u your_username:your_app_password "<?php echo get_site_url(); ?>/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450"</code>
+                              <button class="copy-btn" onclick="copyToClipboard('example3')">Copy</button>
+                            </div>
                         </p>
                     </td>
                 </tr>
@@ -108,7 +121,28 @@ function bono_arm_api_settings_page() {
                 padding: 2px 6px;
                 border-radius: 4px;
             }
+            .copy-btn {
+                margin-left: 10px;
+                padding: 2px 8px;
+                font-size: 11px;
+                cursor: pointer;
+            }
+            .api-example {
+                display: flex;
+                align-items: center;
+                margin-bottom: 8px;
+            }
         </style>
+        <script>
+        function copyToClipboard(elementId) {
+            var temp = document.createElement('textarea');
+            temp.value = document.getElementById(elementId).textContent;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+        }
+        </script>
     </div>
     <?php
 }
