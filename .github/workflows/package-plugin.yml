@@ -1,0 +1,29 @@
+name: Build Release Zip
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare plugin folder
+        run: |
+          mkdir bono_arm_api
+          cp -r *.php readme.txt LICENSE bono_arm_api/
+
+      - name: Zip it
+        run: zip -r bono_arm_api.zip bono_arm_api
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bono_arm_api.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
