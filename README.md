@@ -5,31 +5,49 @@ Extended API endpoints for ARMember (WP Plugin)
 
 A WordPress plugin that exposes extended REST API endpoints for ARMember transactions, including pagination, filtering, and admin-controlled access.
 
+---
+
+## Automatic Updates
+
+This plugin supports automatic updates via the [GitHub Updater](https://github.com/afragen/github-updater) plugin.  
+[Install GitHub Updater](https://github.com/afragen/github-updater) to receive update notifications and one-click updates directly from this repository.
+
+---
+
 ## Features
 
-- Secure REST API endpoint for retrieving ARMember payment logs
+- Secure REST API endpoint for ARMember payment logs
 - Pagination, filtering, and sorting support
 - Access control limited to Administrators
 - Toggle API availability via WordPress settings
-- Application password authentication compatible
+- Compatible with Application Password authentication
 
-## API Endpoint
+## Installation
+
+1. Upload the plugin folder to `/wp-content/plugins/`
+2. Activate the plugin from the WordPress admin.
+3. Go to **Settings → Bono ARM API** and enable "List of Transactions".
+4. *(Optional but recommended)* Install and activate [GitHub Updater](https://github.com/afragen/github-updater) to enable automatic plugin updates.
+
+## Usage
+
+### API Endpoint
 
 ```
 GET /wp-json/bono_armember/v1/arm_payments_log
 ```
 
-### Required Parameter
+#### Required Parameter
 
 - `arm_invoice_id_gt`: integer – return only transactions with invoice ID greater than this value
 
-### Optional Parameters
+#### Optional Parameters
 
 - `arm_plan_id`: integer – filter by plan ID
 - `arm_page`: integer – results page (default: 1)
 - `arm_perpage`: integer – results per page (default: 50)
 
-### Example
+#### Example
 
 Basic:
 ```
@@ -54,15 +72,19 @@ This API requires authentication via WordPress Application Passwords.
 ### Example `curl` Call
 
 ```bash
-curl -u your_username:your_app_password \
-  "https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450"
+curl -u your_username:your_app_password "https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450"
 ```
 
-## Installation
+## FAQ
 
-1. Upload the plugin folder to `/wp-content/plugins/`
-2. Activate the plugin from the WordPress admin.
-3. Go to **Settings → Bono ARM API** and enable "List of Transactions".
+**Who can access the API?**  
+Only WordPress administrators can access the API endpoint.
+
+**How do I enable or disable the API?**  
+Go to **Settings → Bono ARM API** and use the checkbox to enable or disable the List of Transactions endpoint.
+
+**What authentication method is supported?**  
+WordPress Application Passwords.
 
 ## License
 

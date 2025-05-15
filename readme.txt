@@ -16,6 +16,10 @@ A WordPress plugin that exposes extended REST API endpoints for ARMember transac
 
 ARMember Extended API Services provides a secure REST API endpoint for retrieving ARMember payment logs with advanced filtering and pagination. Access is restricted to administrators and can be toggled on/off via the plugin settings page.
 
+**Automatic Updates:**  
+This plugin supports automatic updates via the [GitHub Updater](https://github.com/afragen/github-updater) plugin.  
+[Install GitHub Updater](https://github.com/afragen/github-updater) to receive update notifications and one-click updates directly from this repository.
+
 **Features:**
 - Secure REST API endpoint for ARMember payment logs
 - Pagination, filtering, and sorting support
@@ -28,6 +32,7 @@ ARMember Extended API Services provides a secure REST API endpoint for retrievin
 1. Upload the plugin folder to `/wp-content/plugins/`
 2. Activate the plugin from the WordPress admin.
 3. Go to **Settings → Bono ARM API** and enable "List of Transactions".
+4. *(Optional but recommended)* Install and activate [GitHub Updater](https://github.com/afragen/github-updater) to enable automatic plugin updates.
 
 == Usage ==
 
