@@ -3,7 +3,7 @@
 Plugin Name: ARMember Extended API services
 Plugin URI: https://github.com/renatobo/bono_arm_api
 Description: Exposes extended API endpoints for ARMember transactions including pagination, filtering, and admin-controlled access.
-Version: 1.0.1
+Version: 1.0.0
 Author: Renato Bonomini
 Author URI: https://github.com/renatobo
 License: GPL-2.0-or-later
