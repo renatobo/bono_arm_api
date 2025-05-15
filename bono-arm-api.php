@@ -36,7 +36,17 @@ function bono_arm_api_settings_page() {
     ?>
     <div class="wrap">
         <h1>Bono ARMemeber extended API endpoints Settings</h1>
-        <p class="description">Control the availability of the custom API endpoints for ARM Member transactions. Toggle below to enable or disable the List of Transactions endpoint.</p>
+        <p class="description">
+            Control the availability of the custom API endpoints for ARM Member transactions. Toggle below to enable or disable the List of Transactions endpoint.
+        </p>
+
+        <div style="background: #eaf6ff; border-left: 4px solid #2271b1; padding: 12px 16px; margin-bottom: 20px;">
+            <strong>Automatic Updates:</strong>
+            <br>
+            This plugin supports automatic updates via the <a href="https://github.com/afragen/github-updater" target="_blank" rel="noopener noreferrer">GitHub Updater</a> plugin.
+            <br>
+            <a href="https://github.com/afragen/github-updater" target="_blank" rel="noopener noreferrer">Install GitHub Updater</a> to receive update notifications and one-click updates directly from this repository.
+        </div>
 
         <form method="post" action="options.php">
             <?php settings_fields('bono_arm_api_settings_group'); ?>
