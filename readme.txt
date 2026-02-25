@@ -1,87 +1,99 @@
 === ARMember Extended API Services ===
-Contributors: renatobo  
-Tags: armember, api, rest api, payments, transactions, wordpress  
-Requires at least: 5.0  
-Tested up to: 6.8.1  
+Contributors: renatobo
+Tags: armember, api, rest-api, payments, transactions, wordpress
+Requires at least: 5.0
+Tested up to: 6.8.1
 Stable tag: 1.0.2
-License: GPLv2 or later  
-License URI: https://www.gnu.org/licenses/gpl-2.0.html  
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 GitHub Plugin URI: https://github.com/renatobo/bono_arm_api
 GitHub Branch: main
 
-A WordPress plugin that exposes extended REST API endpoints for ARMember transactions, including pagination, filtering, and admin-controlled access.
+Extended REST API endpoint for ARMember payment logs with pagination, filtering, and administrator-only access.
 
 == Description ==
 
-ARMember Extended API Services provides a secure REST API endpoint for retrieving ARMember payment logs with advanced filtering and pagination. Access is restricted to administrators and can be toggled on/off via the plugin settings page.
+ARMember Extended API Services adds a protected endpoint to retrieve ARMember payment transactions for external integrations.
 
-**Automatic Updates:**  
-This plugin supports automatic updates via the [GitHub Updater](https://github.com/afragen/github-updater) plugin.  
-[Install GitHub Updater](https://github.com/afragen/github-updater) to receive update notifications and one-click updates directly from this repository.
+Access control:
+- Endpoint access is restricted to WordPress administrators.
+- Endpoint availability can be enabled/disabled in plugin settings.
 
-**Features:**
-- Secure REST API endpoint for ARMember payment logs
-- Pagination, filtering, and sorting support
-- Access control limited to Administrators
-- Toggle API availability via WordPress settings
-- Compatible with Application Password authentication
+Endpoint:
+- GET /wp-json/bono_armember/v1/arm_payments_log
+
+Features:
+- Filter by minimum invoice ID
+- Optional filter by plan ID
+- Pagination support for large datasets
+- Compatible with WordPress Application Password authentication
+- Returns successful transactions only
+
+Automatic updates:
+- This plugin supports updates via GitHub Updater:
+  https://github.com/afragen/github-updater
 
 == Installation ==
 
-1. Upload the plugin folder to `/wp-content/plugins/`
-2. Activate the plugin from the WordPress admin.
-3. Go to **Settings → Bono ARM API** and enable "List of Transactions".
-4. *(Optional but recommended)* Install and activate [GitHub Updater](https://github.com/afragen/github-updater) to enable automatic plugin updates.
+1. Upload the plugin folder to `/wp-content/plugins/`.
+2. Activate the plugin from wp-admin -> Plugins.
+3. Go to Settings -> Bono ARM API.
+4. Enable "List of Transactions".
+5. (Optional) Install and activate GitHub Updater for one-click updates from GitHub.
 
 == Usage ==
 
-**API Endpoint:**
-`GET /wp-json/bono_armember/v1/arm_payments_log`
+Endpoint:
+- GET `/wp-json/bono_armember/v1/arm_payments_log`
 
-**Required Parameter:**
-- `arm_invoice_id_gt`: integer – return only transactions with invoice ID greater than this value
+Required parameter:
+- `arm_invoice_id_gt` (integer): return records with invoice ID greater than this value.
 
-**Optional Parameters:**
-- `arm_plan_id`: integer – filter by plan ID
-- `arm_page`: integer – results page (default: 1)
-- `arm_perpage`: integer – results per page (default: 50)
+Optional parameters:
+- `arm_plan_id` (integer): filter by ARMember plan ID.
+- `arm_page` (integer): page number, default `1`.
+- `arm_perpage` (integer): items per page, default `50`.
 
-**Example:**
-Basic:
-`https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450`
-
-With filters and pagination:
-`https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450&arm_plan_id=2&arm_page=2&arm_perpage=25`
+Example requests:
+- `https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450`
+- `https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450&arm_plan_id=2&arm_page=2&arm_perpage=25`
 
 == Authentication ==
 
-This API requires authentication via WordPress Application Passwords.
+Use WordPress Application Passwords.
 
-**How to Set Up:**
-1. Go to **Users → Profile** in your WordPress admin dashboard.
-2. Scroll to **Application Passwords** and create a new one.
-3. Use your WordPress username and the generated password in your API request.
+Setup:
+1. Go to Users -> Profile.
+2. In Application Passwords, create a new password.
+3. Use your username + application password with Basic Auth.
 
-**Example `curl` Call:**
+Example curl:
 `curl -u your_username:your_app_password "https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450"`
 
 == Frequently Asked Questions ==
 
-= Who can access the API? =
-Only WordPress administrators can access the API endpoint.
+= Who can access the endpoint? =
+Only users with the administrator role.
 
-= How do I enable or disable the API? =
-Go to **Settings → Bono ARM API** and use the checkbox to enable or disable the List of Transactions endpoint.
+= How can I disable the endpoint? =
+Go to Settings -> Bono ARM API and uncheck "List of Transactions".
 
-= What authentication method is supported? =
-WordPress Application Passwords.
+= What happens if `arm_invoice_id_gt` is missing? =
+The API responds with `status: 0` and a message indicating the missing parameter.
 
 == Changelog ==
 
-= 1.0 =
+= 1.0.2 =
+* Stable release for ARMember payment log endpoint.
+* Settings toggle for endpoint enable/disable.
+* Pagination and plan filter support.
+* Administrator-only permission check.
+* GitHub Updater compatibility metadata.
+
+= 1.0.0 =
 * Initial release.
 
 == License ==
 
-This plugin is licensed under the [GPL-2.0-or-later](https://www.gnu.org/licenses/gpl-2.0.html).
+This plugin is licensed under GPLv2 or later.
