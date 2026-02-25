@@ -18,16 +18,20 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract version from readme.txt
         id: extract_version
         run: |
+          set -e
           VERSION=$(grep -E '^Stable tag:' readme.txt | awk '{print $3}')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check if tag already exists
         id: check_tag
         run: |
+          set -e
           VERSION=${{ steps.extract_version.outputs.version }}
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
             echo "Tag v$VERSION already exists."
@@ -39,6 +43,7 @@ jobs:
       - name: Tag new version
         if: github.event_name != 'workflow_dispatch' && steps.check_tag.outputs.tag_exists == 'false'
         run: |
+          set -e
           VERSION=${{ steps.extract_version.outputs.version }}
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
