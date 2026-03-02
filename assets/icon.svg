@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="256"
+   height="256"
+   viewBox="0 0 256 256"
+   fill="none"
+   version="1.1"
+   id="svg13"
+   sodipodi:docname="icon.svg"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview13"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.4595337"
+     inkscape:cx="127.46319"
+     inkscape:cy="127.86977"
+     inkscape:window-width="1736"
+     inkscape:window-height="1102"
+     inkscape:window-x="0"
+     inkscape:window-y="39"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg13" />
+  <defs
+     id="defs5">
+    <linearGradient
+       id="bg"
+       x1="24"
+       y1="20"
+       x2="230"
+       y2="236"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         stop-color="#FAF4EE"
+         id="stop1" />
+      <stop
+         offset="0.52"
+         stop-color="#F4F7FB"
+         id="stop2" />
+      <stop
+         offset="1"
+         stop-color="#EEF5F2"
+         id="stop3" />
+    </linearGradient>
+    <linearGradient
+       id="hero"
+       x1="62"
+       y1="46"
+       x2="194"
+       y2="206"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         stop-color="#FF7A59"
+         id="stop4" />
+      <stop
+         offset="1"
+         stop-color="#0F7AC9"
+         id="stop5" />
+    </linearGradient>
+  </defs>
+  <rect
+     width="256"
+     height="256"
+     rx="56"
+     fill="url(#bg)"
+     id="rect5" />
+  <rect
+     x="36"
+     y="34"
+     width="184"
+     height="188"
+     rx="40"
+     fill="white"
+     fill-opacity="0.92"
+     stroke="#E7E3DD"
+     stroke-width="2"
+     id="rect6" />
+  <rect
+     x="58"
+     y="52"
+     width="140"
+     height="120"
+     rx="28"
+     fill="url(#hero)"
+     id="rect7" />
+  <rect
+     x="76"
+     y="72"
+     width="104"
+     height="68"
+     rx="18"
+     fill="#F8FAFC"
+     fill-opacity="0.94"
+     id="rect8" />
+  <rect
+     x="76"
+     y="72"
+     width="104"
+     height="18"
+     rx="9"
+     fill="#111827"
+     id="rect9" />
+  <circle
+     cx="92"
+     cy="81"
+     r="3"
+     fill="#FF7A59"
+     id="circle9" />
+  <circle
+     cx="104"
+     cy="81"
+     r="3"
+     fill="#FDBA74"
+     id="circle10" />
+  <circle
+     cx="116"
+     cy="81"
+     r="3"
+     fill="#34D399"
+     id="circle11" />
+  <g
+     id="rect11">
+    <path
+       style="color:#000000;fill:#dceefe;-inkscape-stroke:none"
+       d="m 103.91188,101 h 16 c 2.77,0 5,2.23 5,5 0,2.77 -2.23,5 -5,5 h -16 c -2.77,0 -5,-2.23 -5,-5 0,-2.77 2.23,-5 5,-5 z"
+       id="path14" />
+    <path
+       style="color:#000000;fill:#999999;-inkscape-stroke:none"
+       d="m 103.91211,100.5 c -3.03835,0 -5.500001,2.46165 -5.500001,5.5 0,3.03835 2.461651,5.5 5.500001,5.5 h 16 c 3.03835,0 5.5,-2.46165 5.5,-5.5 0,-3.03835 -2.46165,-5.5 -5.5,-5.5 z m 0,1 h 16 c 2.50165,0 4.5,1.99835 4.5,4.5 0,2.50165 -1.99835,4.5 -4.5,4.5 h -16 c -2.50165,0 -4.500001,-1.99835 -4.500001,-4.5 0,-2.50165 1.998351,-4.5 4.500001,-4.5 z"
+       id="path15" />
+  </g>
+  <g
+     id="rect12">
+    <path
+       style="color:#000000;fill:#ffe4db;-inkscape-stroke:none"
+       d="m 135.91188,101 h 16 c 2.77,0 5,2.23 5,5 0,2.77 -2.23,5 -5,5 h -16 c -2.77,0 -5,-2.23 -5,-5 0,-2.77 2.23,-5 5,-5 z"
+       id="path16" />
+    <path
+       style="color:#000000;fill:#999999;-inkscape-stroke:none"
+       d="m 135.91211,100.5 c -3.03835,0 -5.5,2.46165 -5.5,5.5 0,3.03835 2.46165,5.5 5.5,5.5 h 16 c 3.03835,0 5.5,-2.46165 5.5,-5.5 0,-3.03835 -2.46165,-5.5 -5.5,-5.5 z m 0,1 h 16 c 2.50165,0 4.5,1.99835 4.5,4.5 0,2.50165 -1.99835,4.5 -4.5,4.5 h -16 c -2.50165,0 -4.5,-1.99835 -4.5,-4.5 0,-2.50165 1.99835,-4.5 4.5,-4.5 z"
+       id="path17" />
+  </g>
+  <g
+     id="rect13">
+    <path
+       style="color:#000000;fill:#cbd5e1;-inkscape-stroke:none"
+       d="m 102.91188,119 h 50 c 2.216,0 4,1.784 4,4 0,2.216 -1.784,4 -4,4 h -50 c -2.216,0 -4,-1.784 -4,-4 0,-2.216 1.784,-4 4,-4 z"
+       id="path18" />
+    <path
+       style="color:#000000;fill:#999999;-inkscape-stroke:none"
+       d="m 102.91211,118.5 c -2.48435,0 -4.500001,2.01565 -4.500001,4.5 0,2.48435 2.015651,4.5 4.500001,4.5 h 50 c 2.48435,0 4.5,-2.01565 4.5,-4.5 0,-2.48435 -2.01565,-4.5 -4.5,-4.5 z m 0,1 h 50 c 1.94765,0 3.5,1.55235 3.5,3.5 0,1.94765 -1.55235,3.5 -3.5,3.5 h -50 c -1.94765,0 -3.500001,-1.55235 -3.500001,-3.5 0,-1.94765 1.552351,-3.5 3.500001,-3.5 z"
+       id="path19" />
+  </g>
+  <path
+     d="M76 182H180"
+     stroke="#CBD5E1"
+     stroke-width="2"
+     stroke-linecap="round"
+     id="path13" />
+  <text
+     x="128.63333"
+     y="210.13162"
+     text-anchor="middle"
+     fill="#111827"
+     font-size="26"
+     font-weight="800"
+     id="text13"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:33.3333px;font-family:Futura;-inkscape-font-specification:'Futura, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-anchor:middle;fill:#111827">ARM</text>
+</svg>

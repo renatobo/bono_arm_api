@@ -8,7 +8,8 @@ License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 GitHub Plugin URI: https://github.com/renatobo/bono_arm_api
-GitHub Branch: main
+Primary Branch: main
+Release Asset: true
 
 Extended REST API endpoint for ARMember payment logs with pagination, filtering, and administrator-only access.
 
@@ -31,8 +32,8 @@ Features:
 - Returns successful transactions only
 
 Automatic updates:
-- This plugin supports updates via GitHub Updater:
-  https://github.com/afragen/github-updater
+- This plugin supports updates via Git Updater:
+  https://github.com/afragen/git-updater
 
 == Installation ==
 
@@ -40,7 +41,7 @@ Automatic updates:
 2. Activate the plugin from wp-admin -> Plugins.
 3. Go to Settings -> Bono ARM API.
 4. Enable "List of Transactions".
-5. (Optional) Install and activate GitHub Updater for one-click updates from GitHub.
+5. (Optional) Install and activate Git Updater for one-click updates from GitHub.
 
 == Usage ==
 
@@ -89,7 +90,7 @@ The API responds with `status: 0` and a message indicating the missing parameter
 * Settings toggle for endpoint enable/disable.
 * Pagination and plan filter support.
 * Administrator-only permission check.
-* GitHub Updater compatibility metadata.
+* Git Updater compatibility metadata.
 
 = 1.0.0 =
 * Initial release.

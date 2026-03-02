@@ -44,6 +44,35 @@ curl -u your_username:your_app_password \
 3. Open **Settings -> Bono ARM API**.
 4. Enable the **List of Transactions** option.
 
+## Packaging
+
+Build an installable plugin zip from the repo root:
+
+```bash
+./build.sh
+```
+
+That creates a Git Updater-compatible release asset like `bono_arm_api-x.y.z.zip`, containing the installable plugin folder `bono-arm-api/`.
+
+## Releases
+
+To prepare a tagged release from the command line:
+
+```bash
+./release.sh x.y.z
+```
+
+That script:
+
+- updates the plugin header version in `bono-arm-api.php`
+- updates `BONO_ARM_API_VERSION`
+- updates the `Stable tag` in `readme.txt`
+- commits the version bump
+- creates and pushes the git tag `vx.y.z`
+- verifies that all version references match
+
+Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or updates the GitHub Release, and uploads the generated zip asset automatically.
+
 ## Authentication
 
 This endpoint requires WordPress authentication and checks for the `administrator` role.
@@ -142,9 +171,9 @@ https://your-site.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_g
 
 ## Automatic updates
 
-This plugin is compatible with [GitHub Updater](https://github.com/afragen/github-updater).
+This plugin is compatible with [Git Updater](https://github.com/afragen/git-updater).
 
-Install GitHub Updater to receive update notifications and one-click updates from this repository.
+Install Git Updater to receive update notifications and one-click updates from this repository.
 
 ## Release process
 
