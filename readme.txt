@@ -2,8 +2,8 @@
 Contributors: renatobo
 Tags: armember, api, rest-api, payments, transactions, wordpress
 Requires at least: 5.0
-Tested up to: 6.8.1
-Stable tag: 1.0.3
+Tested up to: 6.9.1
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,7 +54,7 @@ Required parameter:
 Optional parameters:
 - `arm_plan_id` (integer): filter by ARMember plan ID.
 - `arm_page` (integer): page number, default `1`.
-- `arm_perpage` (integer): items per page, default `50`.
+- `arm_perpage` (integer): items per page, default `50`, maximum `100`.
 
 Example requests:
 - `https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450`
@@ -84,6 +84,10 @@ Go to Settings -> Bono ARM API and uncheck "List of Transactions".
 The API responds with `status: 0` and a message indicating the missing parameter.
 
 == Changelog ==
+
+= 1.0.4 =
+* Hardened the release workflow against shell injection in manually dispatched version inputs.
+* Capped `arm_perpage` at 100 records per request to reduce admin-only endpoint abuse risk.
 
 = 1.0.2 =
 * Stable release for ARMember payment log endpoint.

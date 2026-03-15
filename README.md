@@ -7,6 +7,8 @@
 
 WordPress plugin that exposes a protected REST API endpoint for ARMember payment logs, with pagination and filtering for external integrations.
 
+Current version: `1.0.4`
+
 ## Quick start
 
 1. Copy this plugin to your WordPress plugins folder.
@@ -103,7 +105,7 @@ curl -u your_username:your_app_password \
 | `arm_invoice_id_gt` | integer | Yes | Return records where invoice ID is greater than this value |
 | `arm_plan_id` | integer | No | Filter by ARMember plan ID |
 | `arm_page` | integer | No | Page number (default: `1`) |
-| `arm_perpage` | integer | No | Items per page (default: `50`) |
+| `arm_perpage` | integer | No | Items per page (default: `50`, maximum: `100`) |
 
 ### Example request
 

@@ -3,7 +3,7 @@
 Plugin Name: ARMember Extended API services
 Plugin URI: https://github.com/renatobo/bono_arm_api
 Description: Exposes extended API endpoints for ARMember transactions including pagination, filtering, and admin-controlled access.
-Version: 1.0.3
+Version: 1.0.4
 Author: Renato Bonomini
 Author URI: https://github.com/renatobo
 License: GPL-2.0-or-later
@@ -18,10 +18,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BONO_ARM_API_VERSION', '1.0.3');
+define('BONO_ARM_API_VERSION', '1.0.4');
 define('BONO_ARM_API_NAMESPACE', 'bono_armember/v1');
 define('BONO_ARM_API_OPTION_ENABLE_TRANSACTIONS', 'bono_arm_api_enable_transactions');
 define('BONO_ARM_API_SETTINGS_PAGE', 'bono-arm-api-settings');
+define('BONO_ARM_API_MAX_PER_PAGE', 100);
 
 add_action('admin_menu', 'bono_arm_api_add_settings_page');
 add_action('admin_init', 'bono_arm_api_register_settings');
@@ -735,7 +736,7 @@ function bono_get_arm_payments_log($request) {
     $arm_plan_id = $request->get_param('arm_plan_id');
     $min_invoice_id = $request->get_param('arm_invoice_id_gt');
     $page = max(1, (int) $request->get_param('arm_page'));
-    $per_page = max(1, (int) $request->get_param('arm_perpage'));
+    $per_page = min(BONO_ARM_API_MAX_PER_PAGE, max(1, (int) $request->get_param('arm_perpage')));
 
     if (!$min_invoice_id) {
         return rest_ensure_response(
