@@ -3,7 +3,7 @@ Contributors: renatobo
 Tags: armember, api, rest-api, payments, transactions, wordpress
 Requires at least: 5.0
 Tested up to: 6.9.1
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -84,6 +84,14 @@ Go to Settings -> Bono ARM API and uncheck "List of Transactions".
 The API responds with `status: 0` and a message indicating the missing parameter.
 
 == Changelog ==
+
+= 1.0.6 =
+* Synced version metadata across `README.md`, `readme.txt`, and the plugin header for release consistency.
+* Updated the release script to keep the GitHub/project README version aligned on future releases.
+
+= 1.0.5 =
+* Fixed the release package slug to `bono_arm_api` so WordPress updates the existing plugin instead of creating a duplicate entry.
+* Cleaned the release workflow to ignore generated zip artifacts and remove previously tracked release archives.
 
 = 1.0.4 =
 * Hardened the release workflow against shell injection in manually dispatched version inputs.

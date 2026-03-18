@@ -7,7 +7,7 @@
 
 WordPress plugin that exposes a protected REST API endpoint for ARMember payment logs, with pagination and filtering for external integrations.
 
-Current version: `1.0.4`
+Current version: `1.0.6`
 
 ## Quick start
 
@@ -54,7 +54,7 @@ Build an installable plugin zip from the repo root:
 ./build.sh
 ```
 
-That creates a Git Updater-compatible release asset like `bono_arm_api-x.y.z.zip`, containing the installable plugin folder `bono-arm-api/`.
+That creates a Git Updater-compatible release asset like `bono_arm_api-x.y.z.zip`, containing the installable plugin folder `bono_arm_api/`.
 
 ## Releases
 
