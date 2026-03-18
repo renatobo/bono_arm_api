@@ -163,7 +163,7 @@ remove_tracked_release_archives
 update_file "$README_FILE" "^Stable tag: .*" "Stable tag: $VERSION"
 update_file "$PLUGIN_FILE" "^Version: .*" "Version: $VERSION"
 update_file "$PLUGIN_FILE" "^define('BONO_ARM_API_VERSION', '.*');$" "define('BONO_ARM_API_VERSION', '$VERSION');"
-update_file "$PROJECT_README_FILE" "^Current version: `.*`$" "Current version: \`$VERSION\`"
+update_file "$PROJECT_README_FILE" '^Current version: `.*`$' "Current version: \`$VERSION\`"
 
 assert_versions_match
 
