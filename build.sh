@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_SLUG="$(basename "$PWD")"
-PLUGIN_SLUG="bono-arm-api"
+PLUGIN_SLUG="bono_arm_api"
 PLUGIN_FILE="bono-arm-api.php"
 
 if [[ ! -f "$PLUGIN_FILE" ]]; then
