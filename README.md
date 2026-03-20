@@ -1,18 +1,18 @@
-# ARMember Extended API Services
+# Bono API for ARMember
 
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
-[![Tested up to](https://img.shields.io/badge/Tested%20up%20to-6.8.1-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
+[![Tested up to](https://img.shields.io/badge/Tested%20up%20to-6.9.4-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![Release](https://img.shields.io/github/v/release/renatobo/bono_arm_api?label=release)](https://github.com/renatobo/bono_arm_api/releases)
 [![License: GPL v2 or later](https://img.shields.io/badge/License-GPL%20v2%20or%20later-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
 WordPress plugin that exposes a protected REST API endpoint for ARMember payment logs, with pagination and filtering for external integrations.
 
-Current version: `1.0.6`
+Current version: `1.0.8`
 
 ## Quick start
 
 1. Copy this plugin to your WordPress plugins folder.
-2. Activate **ARMember Extended API services**.
+2. Activate **Bono API for ARMember**.
 3. Go to **Settings -> Bono ARM API**.
 4. Enable **List of Transactions**.
 5. Create a WordPress **Application Password** for an administrator user.
@@ -38,6 +38,8 @@ curl -u your_username:your_app_password \
 - WordPress `5.0+`
 - ARMember plugin installed and active
 - HTTPS-enabled site (recommended for secure API auth)
+
+If ARMember is unavailable, the endpoint returns `status: 0` with a dependency message instead of querying missing tables.
 
 ## Installation
 
@@ -165,6 +167,18 @@ https://your-site.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_g
 {
   "status": 0,
   "message": "Missing parameter(s): arm_invoice_id_gt",
+  "response": {
+    "result": []
+  }
+}
+```
+
+- ARMember unavailable:
+
+```json
+{
+  "status": 0,
+  "message": "ARMember payment tables are not available. Ensure ARMember is installed and active.",
   "response": {
     "result": []
   }

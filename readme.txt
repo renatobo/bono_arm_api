@@ -1,21 +1,17 @@
-=== ARMember Extended API Services ===
-Contributors: renatobo
-Tags: armember, api, rest-api, payments, transactions, wordpress
+=== Bono API for ARMember ===
+Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 5.0
-Tested up to: 6.9.1
-Stable tag: 1.0.6
+Tested up to: 6.9.4
+Stable tag: 1.0.8
+Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-GitHub Plugin URI: https://github.com/renatobo/bono_arm_api
-Primary Branch: main
-Release Asset: true
-
-Extended REST API endpoint for ARMember payment logs with pagination, filtering, and administrator-only access.
+Admin-only REST API access to ARMember payment logs with filtering and pagination.
 
 == Description ==
 
-ARMember Extended API Services adds a protected endpoint to retrieve ARMember payment transactions for external integrations.
+Bono API for ARMember adds a protected endpoint to retrieve ARMember payment transactions for external integrations.
 
 Access control:
 - Endpoint access is restricted to WordPress administrators.
@@ -30,6 +26,7 @@ Features:
 - Pagination support for large datasets
 - Compatible with WordPress Application Password authentication
 - Returns successful transactions only
+- Returns a `status: 0` dependency message if ARMember tables are unavailable
 
 Automatic updates:
 - This plugin supports updates via Git Updater:
@@ -72,6 +69,11 @@ Setup:
 Example curl:
 `curl -u your_username:your_app_password "https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450"`
 
+== Upgrade Notice ==
+
+= 1.0.8 =
+Improves WordPress.org submission readiness, adds ARMember dependency checks, localizes plugin UI and API copy, and cleans release packaging.
+
 == Frequently Asked Questions ==
 
 = Who can access the endpoint? =
@@ -83,7 +85,17 @@ Go to Settings -> Bono ARM API and uncheck "List of Transactions".
 = What happens if `arm_invoice_id_gt` is missing? =
 The API responds with `status: 0` and a message indicating the missing parameter.
 
+= What happens if ARMember is inactive or missing? =
+The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
+
 == Changelog ==
+
+= 1.0.8 =
+* Added graceful ARMember dependency checks so the endpoint returns a controlled error when ARMember tables are unavailable.
+* Added text-domain metadata and localized plugin UI/API strings for translation readiness.
+* Confirmed compatibility through WordPress 6.9.4 and synced release documentation.
+* Prepared standard WordPress.org readme metadata and upgrade notice content.
+* Fixed build packaging so local validation artifacts are excluded from release archives.
 
 = 1.0.6 =
 * Synced version metadata across `README.md`, `readme.txt`, and the plugin header for release consistency.

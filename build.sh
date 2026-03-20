@@ -30,12 +30,15 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$PACKAGE_DIR"
+rm -f "$OUTPUT_PATH"
 
 rsync -a \
   --exclude '.git/' \
   --exclude '.github/' \
   --exclude '.claude/' \
   --exclude '.DS_Store' \
+  --exclude '/output' \
+  --exclude '/output/**' \
   --exclude '*.zip' \
   --exclude '.gitignore' \
   --exclude 'AGENTS.md' \
@@ -45,6 +48,8 @@ rsync -a \
   --exclude 'release.sh' \
   --exclude 'ui.md' \
   ./ "$PACKAGE_DIR/"
+
+rm -rf "$PACKAGE_DIR/output"
 
 (
   cd "$STAGING_DIR"
