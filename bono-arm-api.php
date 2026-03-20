@@ -3,7 +3,7 @@
 Plugin Name: Bono API for ARMember
 Plugin URI: https://github.com/renatobo/bono_arm_api
 Description: Admin-only REST API access to ARMember payment logs with filtering and pagination.
-Version: 1.0.8
+Version: 1.0.9
 Requires at least: 5.0
 Requires PHP: 7.4
 Author: Renato Bonomini
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BONO_ARM_API_VERSION', '1.0.8');
+define('BONO_ARM_API_VERSION', '1.0.9');
 define('BONO_ARM_API_NAMESPACE', 'bono_armember/v1');
 define('BONO_ARM_API_OPTION_ENABLE_TRANSACTIONS', 'bono_arm_api_enable_transactions');
 define('BONO_ARM_API_SETTINGS_PAGE', 'bono-arm-api-settings');
@@ -219,7 +219,7 @@ function bono_arm_api_render_settings_page() {
                     <?php esc_html_e('Renato Bonomini on GitHub', 'bono-arm-api'); ?>
                 </a>
                 <a href="<?php echo esc_url($git_updater_url); ?>" target="_blank" rel="noopener noreferrer">
-                    <?php esc_html_e('Updates via Git Updater', 'bono-arm-api'); ?>
+                    <?php esc_html_e('GitHub Updates (Git Updater)', 'bono-arm-api'); ?>
                 </a>
             </div>
 
@@ -230,6 +230,9 @@ function bono_arm_api_render_settings_page() {
                 </p>
                 <p class="bono-arm-api-intro bono-arm-api-intro-secondary">
                     <?php esc_html_e('This plugin is designed for WordPress integrations that need filtered ARMember payment logs without exposing the endpoint publicly.', 'bono-arm-api'); ?>
+                </p>
+                <p class="bono-arm-api-intro bono-arm-api-intro-secondary">
+                    <?php esc_html_e('Distribution is dual-channel: GitHub releases are the primary update channel through Git Updater, and WordPress.org remains the secondary channel when that listing is available.', 'bono-arm-api'); ?>
                 </p>
             </div>
 

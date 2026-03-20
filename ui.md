@@ -8,13 +8,14 @@
   - `Plugin Repository`
   - current plugin version
   - author GitHub link
-  - single-button link: `Updates via Git Updater`
+  - single-button link: `GitHub Updates (Git Updater)`
 
 ## Settings Intro Copy
 
 - Keep the page title `Bono ARM API Settings`.
 - Keep the short descriptive paragraph focused on controlling the protected ARMember transactions endpoint.
 - Keep the secondary line centered on external integrations and authenticated access.
+- Include a short note that the plugin supports dual distribution: GitHub releases via Git Updater are primary, and WordPress.org is the secondary channel when available.
 
 ## Tabs
 

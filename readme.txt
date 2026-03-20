@@ -2,7 +2,7 @@
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 5.0
 Tested up to: 6.9.4
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -29,7 +29,8 @@ Features:
 - Returns a `status: 0` dependency message if ARMember tables are unavailable
 
 Automatic updates:
-- This plugin supports updates via Git Updater:
+- This plugin is set up for GitHub-distributed updates through Git Updater.
+- WordPress.org can be used as a secondary channel when that listing is in place.
   https://github.com/afragen/git-updater
 
 == Installation ==
@@ -38,7 +39,7 @@ Automatic updates:
 2. Activate the plugin from wp-admin -> Plugins.
 3. Go to Settings -> Bono ARM API.
 4. Enable "List of Transactions".
-5. (Optional) Install and activate Git Updater for one-click updates from GitHub.
+5. Install and activate Git Updater for one-click updates from GitHub releases.
 
 == Usage ==
 
@@ -71,8 +72,8 @@ Example curl:
 
 == Upgrade Notice ==
 
-= 1.0.8 =
-Improves WordPress.org submission readiness, adds ARMember dependency checks, localizes plugin UI and API copy, and cleans release packaging.
+= 1.0.9 =
+Clarifies GitHub-first distribution with Git Updater metadata and aligns admin and readme copy for the dual-channel release model.
 
 == Frequently Asked Questions ==
 
@@ -89,6 +90,10 @@ The API responds with `status: 0` and a message indicating the missing parameter
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 1.0.9 =
+* Clarified GitHub-first distribution through Git Updater, with WordPress.org documented as the secondary channel when available.
+* Updated plugin UI, repository docs, and agent guidance to keep release/distribution copy consistent.
 
 = 1.0.8 =
 * Added graceful ARMember dependency checks so the endpoint returns a controlled error when ARMember tables are unavailable.

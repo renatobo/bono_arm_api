@@ -7,7 +7,7 @@
 
 WordPress plugin that exposes a protected REST API endpoint for ARMember payment logs, with pagination and filtering for external integrations.
 
-Current version: `1.0.8`
+Current version: `1.0.9`
 
 ## Quick start
 
@@ -47,6 +47,7 @@ If ARMember is unavailable, the endpoint returns `status: 0` with a dependency m
 2. Activate it from **Plugins** in wp-admin.
 3. Open **Settings -> Bono ARM API**.
 4. Enable the **List of Transactions** option.
+5. Install **Git Updater** if you want this site to track GitHub releases, which is the primary distribution channel for this plugin.
 
 ## Packaging
 
@@ -188,6 +189,11 @@ https://your-site.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_g
 ## Automatic updates
 
 This plugin is compatible with [Git Updater](https://github.com/afragen/git-updater).
+
+The intended distribution model is dual-channel:
+
+- GitHub releases are the primary install and update path for sites running Git Updater.
+- WordPress.org is the secondary channel when that listing is available.
 
 Install Git Updater to receive update notifications and one-click updates from this repository.
 
