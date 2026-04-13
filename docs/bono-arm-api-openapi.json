@@ -1,0 +1,501 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bono ARM API REST API",
+    "summary": "OpenAPI definition for the administrator-protected ARMember transaction and member-management endpoints.",
+    "description": "Bono ARM API exposes administrator-only routes for reading ARMember payment transactions, activating ARMember members, and deleting members through a guarded ARMember-aware lifecycle. GitHub Releases is the primary distribution channel for this plugin, with Git Updater as the intended update mechanism for GitHub installs.",
+    "version": "1.0.9"
+  },
+  "externalDocs": {
+    "description": "Plugin repository",
+    "url": "https://github.com/renatobo/bono_arm_api"
+  },
+  "servers": [
+    {
+      "url": "{siteUrl}/wp-json",
+      "description": "WordPress REST root",
+      "variables": {
+        "siteUrl": {
+          "default": "https://example.com"
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "Transactions",
+      "description": "Administrator-only ARMember payment log reads."
+    },
+    {
+      "name": "Members",
+      "description": "Administrator-only ARMember member activation and deletion."
+    }
+  ],
+  "paths": {
+    "/bono_armember/v1/arm_payments_log": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "List ARMember payment transactions",
+        "description": "Returns paginated ARMember payment log entries filtered by invoice threshold and optional plan ID. Requires administrator authentication and the transactions endpoint to be enabled in plugin settings.",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "arm_invoice_id_gt",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Return only records with invoice IDs greater than this value."
+          },
+          {
+            "name": "arm_plan_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Optional ARMember plan ID filter."
+          },
+          {
+            "name": "arm_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number."
+          },
+          {
+            "name": "arm_perpage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Items per page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions response envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          }
+        }
+      }
+    },
+    "/bono_armember/v1/members/{user_id}/activate": {
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Activate an ARMember member",
+        "description": "Sets the specified ARMember member to active, clears any activation key, and can optionally send ARMember's manual activation email. Requires administrator authentication and the member activation endpoint to be enabled in plugin settings.",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "WordPress user ID to activate in ARMember."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Activation response envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivateMemberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          }
+        }
+      }
+    },
+    "/bono_armember/v1/members/{user_id}/delete": {
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Delete an ARMember member",
+        "description": "Deletes the specified WordPress user on supported single-site installs and preserves ARMember's delete lifecycle. Requires administrator authentication and the member delete endpoint to be enabled in plugin settings.",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "WordPress user ID to delete together with ARMember member data."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion response envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteMemberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorEnvelope"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Use a WordPress administrator username and Application Password."
+      }
+    },
+    "schemas": {
+      "EnvelopeBase": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "result": {}
+            },
+            "required": [
+              "result"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "message",
+          "response"
+        ]
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "arm_log_id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "arm_payer_email": {
+            "type": "string"
+          },
+          "arm_paid_amount": {
+            "type": "string"
+          },
+          "arm_payment_gateway": {
+            "type": "string"
+          },
+          "arm_payment_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "arm_transaction_status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "arm_log_id",
+          "username",
+          "arm_payer_email",
+          "arm_paid_amount",
+          "arm_payment_gateway",
+          "arm_payment_date",
+          "notes",
+          "arm_transaction_status"
+        ]
+      },
+      "PaymentsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "response": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "object",
+                    "properties": {
+                      "payments": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Payment"
+                        }
+                      },
+                      "pagination": {
+                        "type": "object",
+                        "properties": {
+                          "page": {
+                            "type": "integer"
+                          },
+                          "per_page": {
+                            "type": "integer"
+                          },
+                          "total_count": {
+                            "type": "integer"
+                          },
+                          "total_pages": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "page",
+                          "per_page",
+                          "total_count",
+                          "total_pages"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "payments",
+                      "pagination"
+                    ]
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ActivateMemberRequest": {
+        "type": "object",
+        "properties": {
+          "send_email": {
+            "type": "boolean",
+            "default": false,
+            "description": "Send ARMember's manual activation email after activation."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivateMemberResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "response": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "type": "integer"
+                      },
+                      "primary_status": {
+                        "type": "integer"
+                      },
+                      "secondary_status": {
+                        "type": "integer"
+                      },
+                      "email_sent": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "user_id",
+                      "primary_status",
+                      "secondary_status",
+                      "email_sent"
+                    ]
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "DeleteMemberResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "response": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "type": "integer"
+                      },
+                      "user_login": {
+                        "type": "string"
+                      },
+                      "user_email": {
+                        "type": "string"
+                      },
+                      "cleanup_mode": {
+                        "type": "string",
+                        "enum": [
+                          "automatic_hooks",
+                          "manual_fallback"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "user_id",
+                      "user_login",
+                      "user_email",
+                      "cleanup_mode"
+                    ]
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnvelopeBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "ErrorEnvelope": {
+        "description": "Error response envelope",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/renatobo/bono_arm_api?label=release)](https://github.com/renatobo/bono_arm_api/releases)
 [![License: GPL v2 or later](https://img.shields.io/badge/License-GPL%20v2%20or%20later-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
-WordPress plugin that exposes a protected REST API endpoint for ARMember payment logs, with pagination and filtering for external integrations.
+WordPress plugin that exposes protected REST API endpoints for ARMember payment logs, admin-triggered member activation, and guarded member deletion.
 
 Current version: `1.0.9`
 
@@ -26,8 +26,13 @@ curl -u your_username:your_app_password \
 ## Features
 
 - Dedicated endpoint: `GET /wp-json/bono_armember/v1/arm_payments_log`
+- Dedicated endpoint: `POST /wp-json/bono_armember/v1/members/{user_id}/activate`
+- Dedicated endpoint: `POST /wp-json/bono_armember/v1/members/{user_id}/delete`
+- Checked-in API specs under `docs/` for OpenAPI 3.1 and Postman
 - Filters by invoice threshold and ARMember plan
 - Pagination support for large transaction sets
+- Optional member activation email dispatch through ARMember
+- Guarded member deletion through `wp_delete_user()` with ARMember cleanup lifecycle preservation
 - Returns only successful ARMember transactions
 - Access restricted to administrator users
 - Endpoint can be enabled/disabled from plugin settings
@@ -47,7 +52,9 @@ If ARMember is unavailable, the endpoint returns `status: 0` with a dependency m
 2. Activate it from **Plugins** in wp-admin.
 3. Open **Settings -> Bono ARM API**.
 4. Enable the **List of Transactions** option.
-5. Install **Git Updater** if you want this site to track GitHub releases, which is the primary distribution channel for this plugin.
+5. Enable **Activate Member** if you want to expose the activation route.
+6. Enable **Delete Member** if you want to expose the deletion route.
+7. Install **Git Updater** if you want this site to track GitHub releases, which is the primary distribution channel for this plugin.
 
 ## Packaging
 
@@ -58,6 +65,15 @@ Build an installable plugin zip from the repo root:
 ```
 
 That creates a Git Updater-compatible release asset like `bono_arm_api-x.y.z.zip`, containing the installable plugin folder `bono_arm_api/`.
+
+## API specs
+
+Checked-in API artifacts are available in the plugin and repo under:
+
+- `docs/bono-arm-api-openapi.json`
+- `docs/bono-arm-api-postman-collection.json`
+
+The settings page exposes both files in the **API Specs** tab, along with the current site REST root to use as the Postman `baseUrl`.
 
 ## Releases
 
@@ -75,8 +91,9 @@ That script:
 - commits the version bump
 - creates and pushes the git tag `vx.y.z`
 - verifies that all version references match
+- requires `release-notes/x.y.z.md` with the standard release-note headings
 
-Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or updates the GitHub Release, and uploads the generated zip asset automatically.
+Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or updates the GitHub Release using the checked-in release notes file, and uploads the generated zip asset automatically.
 
 ## Authentication
 
@@ -143,6 +160,83 @@ https://your-site.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_g
         "total_count": 340,
         "total_pages": 14
       }
+    }
+  }
+}
+```
+
+### Activation endpoint
+
+`POST /wp-json/bono_armember/v1/members/{user_id}/activate`
+
+Optional JSON body:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `send_email` | boolean | No | Send ARMember's manual activation email after the member is activated |
+
+Example request:
+
+```bash
+curl -u your_username:your_app_password \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"send_email":true}' \
+  "https://your-site.com/wp-json/bono_armember/v1/members/123/activate"
+```
+
+Example success response:
+
+```json
+{
+  "status": 1,
+  "message": "Member activated successfully.",
+  "response": {
+    "result": {
+      "user_id": 123,
+      "primary_status": 1,
+      "secondary_status": 0,
+      "email_sent": true
+    }
+  }
+}
+```
+
+### Deletion endpoint
+
+`POST /wp-json/bono_armember/v1/members/{user_id}/delete`
+
+No request body is required.
+
+Example request:
+
+```bash
+curl -u your_username:your_app_password \
+  -X POST \
+  "https://your-site.com/wp-json/bono_armember/v1/members/123/delete"
+```
+
+Behavior:
+
+- requires administrator authentication
+- requires the member delete endpoint toggle to be enabled in plugin settings
+- currently supports single-site installs only
+- uses `wp_delete_user()` as the primary deletion path
+- relies on ARMember's `delete_user` and `deleted_user` lifecycle when available
+- falls back to ARMember's explicit pre/post-delete methods only when those methods are loaded but the hooks are not attached
+
+Example success response:
+
+```json
+{
+  "status": 1,
+  "message": "Member deleted successfully.",
+  "response": {
+    "result": {
+      "user_id": 123,
+      "user_login": "membername",
+      "user_email": "member@example.com",
+      "cleanup_mode": "automatic_hooks"
     }
   }
 }

@@ -6,6 +6,8 @@ VERSION="${1:-}"
 PLUGIN_FILE="bono-arm-api.php"
 README_FILE="readme.txt"
 PROJECT_README_FILE="README.md"
+NOTES_DIR="release-notes"
+NOTES_FILE=""
 RELEASE_SUPPORT_FILES=(
   "$README_FILE"
   "$PLUGIN_FILE"
@@ -13,6 +15,8 @@ RELEASE_SUPPORT_FILES=(
   "build.sh"
   "release.sh"
   ".gitignore"
+  ".github/workflows/package-plugin.yml"
+  "$NOTES_DIR/README.md"
 )
 
 if [[ -z "$VERSION" ]]; then
@@ -25,6 +29,7 @@ if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 fi
 
 TAG="v$VERSION"
+NOTES_FILE="$NOTES_DIR/$VERSION.md"
 
 if git rev-parse "$TAG" >/dev/null 2>&1; then
   echo "Tag $TAG already exists."
@@ -44,6 +49,10 @@ is_allowed_release_path() {
       return 0
     fi
   done
+
+  if [[ "$path" == "$NOTES_DIR/"* || "$path" == "docs/"* ]]; then
+    return 0
+  fi
 
   return 1
 }
@@ -156,7 +165,26 @@ assert_versions_match() {
   fi
 }
 
+assert_release_notes_file() {
+  if [[ ! -f "$NOTES_FILE" ]]; then
+    echo "Missing release notes file: $NOTES_FILE"
+    echo "Create it with these sections before releasing:"
+    echo "  ## New Features"
+    echo "  ## Improvements"
+    echo "  ## Bug Fixes"
+    exit 1
+  fi
+
+  for heading in "## New Features" "## Improvements" "## Bug Fixes"; do
+    if ! grep -Fq "$heading" "$NOTES_FILE"; then
+      echo "Release notes file $NOTES_FILE is missing required heading: $heading"
+      exit 1
+    fi
+  done
+}
+
 assert_releasable_worktree
+assert_release_notes_file
 
 remove_tracked_release_archives
 
@@ -168,6 +196,7 @@ update_file "$PROJECT_README_FILE" '^Current version: `.*`$' "Current version: \
 assert_versions_match
 
 stage_release_support_files
+git add -- "$NOTES_FILE"
 git commit -m "Bump version to $VERSION"
 git tag -a "$TAG" -m "Release $VERSION"
 git push origin main
@@ -178,6 +207,6 @@ Release prepared for $TAG.
 
 GitHub Actions will now:
 - build the WordPress plugin zip with ./build.sh
-- create or update the GitHub Release for $TAG
+- create or update the GitHub Release for $TAG using $NOTES_FILE
 - attach the generated versioned zip asset
 MSG

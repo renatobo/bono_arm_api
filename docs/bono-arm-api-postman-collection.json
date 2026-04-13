@@ -1,0 +1,135 @@
+{
+  "info": {
+    "_postman_id": "c32f49df-08de-474a-8386-9a0f6b2b14a4",
+    "name": "Bono ARM API",
+    "description": "Postman collection for the administrator-protected Bono ARM API REST endpoints for ARMember payment transactions, member activation, and member deletion.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{applicationPassword}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://example.com/wp-json",
+      "type": "string"
+    },
+    {
+      "key": "namespace",
+      "value": "bono_armember/v1",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "applicationPassword",
+      "value": "xxxx xxxx xxxx xxxx xxxx xxxx",
+      "type": "string"
+    },
+    {
+      "key": "invoiceIdGt",
+      "value": "1450",
+      "type": "string"
+    },
+    {
+      "key": "planId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "123",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "List transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/{{namespace}}/arm_payments_log?arm_invoice_id_gt={{invoiceIdGt}}",
+            "description": "List successful ARMember payment log rows after the supplied invoice ID."
+          }
+        },
+        {
+          "name": "List transactions by plan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/{{namespace}}/arm_payments_log?arm_invoice_id_gt={{invoiceIdGt}}&arm_plan_id={{planId}}&arm_page=1&arm_perpage=50",
+            "description": "List successful ARMember payment log rows after the supplied invoice ID and limited to one plan."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "Activate member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"send_email\": false\n}"
+            },
+            "url": "{{baseUrl}}/{{namespace}}/members/{{userId}}/activate",
+            "description": "Activate an ARMember member without sending the manual activation email."
+          }
+        },
+        {
+          "name": "Activate member and send email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"send_email\": true\n}"
+            },
+            "url": "{{baseUrl}}/{{namespace}}/members/{{userId}}/activate",
+            "description": "Activate an ARMember member and send the ARMember manual activation email."
+          }
+        },
+        {
+          "name": "Delete member",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/{{namespace}}/members/{{userId}}/delete",
+            "description": "Delete an ARMember member on supported single-site installs while preserving ARMember's delete cleanup lifecycle."
+          }
+        }
+      ]
+    }
+  ]
+}

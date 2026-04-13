@@ -7,11 +7,11 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Admin-only REST API access to ARMember payment logs with filtering and pagination.
+Admin-only REST API access to ARMember payment logs, ARMember member activation, and guarded member deletion.
 
 == Description ==
 
-Bono API for ARMember adds a protected endpoint to retrieve ARMember payment transactions for external integrations.
+Bono API for ARMember adds protected endpoints to retrieve ARMember payment transactions and activate ARMember members for external integrations.
 
 Access control:
 - Endpoint access is restricted to WordPress administrators.
@@ -19,11 +19,14 @@ Access control:
 
 Endpoint:
 - GET /wp-json/bono_armember/v1/arm_payments_log
+- POST /wp-json/bono_armember/v1/members/{user_id}/activate
 
 Features:
 - Filter by minimum invoice ID
 - Optional filter by plan ID
 - Pagination support for large datasets
+- Optional ARMember manual activation email on activation requests
+- Checked-in OpenAPI 3.1 and Postman specs under `docs/`
 - Compatible with WordPress Application Password authentication
 - Returns successful transactions only
 - Returns a `status: 0` dependency message if ARMember tables are unavailable
@@ -39,12 +42,15 @@ Automatic updates:
 2. Activate the plugin from wp-admin -> Plugins.
 3. Go to Settings -> Bono ARM API.
 4. Enable "List of Transactions".
-5. Install and activate Git Updater for one-click updates from GitHub releases.
+5. Enable "Activate Member" if you want to expose the activation route.
+6. Install and activate Git Updater for one-click updates from GitHub releases.
 
 == Usage ==
 
 Endpoint:
 - GET `/wp-json/bono_armember/v1/arm_payments_log`
+- POST `/wp-json/bono_armember/v1/members/{user_id}/activate`
+- POST `/wp-json/bono_armember/v1/members/{user_id}/delete`
 
 Required parameter:
 - `arm_invoice_id_gt` (integer): return records with invoice ID greater than this value.
@@ -57,6 +63,8 @@ Optional parameters:
 Example requests:
 - `https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450`
 - `https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450&arm_plan_id=2&arm_page=2&arm_perpage=25`
+- `POST https://yourwebsite.com/wp-json/bono_armember/v1/members/123/activate` with optional JSON body `{"send_email":true}`
+- `POST https://yourwebsite.com/wp-json/bono_armember/v1/members/123/delete`
 
 == Authentication ==
 
@@ -70,6 +78,15 @@ Setup:
 Example curl:
 `curl -u your_username:your_app_password "https://yourwebsite.com/wp-json/bono_armember/v1/arm_payments_log?arm_invoice_id_gt=1450"`
 
+== API Specs ==
+
+The plugin includes checked-in API artifacts at:
+
+- `docs/bono-arm-api-openapi.json`
+- `docs/bono-arm-api-postman-collection.json`
+
+The plugin settings page exposes these files in the "API Specs" tab, together with the current site REST root to use as the Postman `baseUrl`.
+
 == Upgrade Notice ==
 
 = 1.0.9 =
@@ -81,7 +98,15 @@ Clarifies GitHub-first distribution with Git Updater metadata and aligns admin a
 Only users with the administrator role.
 
 = How can I disable the endpoint? =
-Go to Settings -> Bono ARM API and uncheck "List of Transactions".
+Go to Settings -> Bono ARM API and uncheck the endpoint toggle you want to disable.
+
+= What does the activation endpoint do? =
+It activates the specified ARMember member by setting them to active status, clears any activation key, and can optionally send ARMember's manual activation email.
+
+= Is there a delete-member endpoint? =
+Yes.
+
+The protected `POST /wp-json/bono_armember/v1/members/{user_id}/delete` route deletes the WordPress user on single-site installs and preserves ARMember's safer cleanup lifecycle around `wp_delete_user()`. It uses ARMember's registered delete hooks when they are active and falls back to ARMember's explicit pre-delete and post-delete methods only when those methods are loaded but the hooks are not attached.
 
 = What happens if `arm_invoice_id_gt` is missing? =
 The API responds with `status: 0` and a message indicating the missing parameter.

@@ -1,2 +1,5 @@
 /*.zip
 /output/
+/temp/
+.env.local
+
