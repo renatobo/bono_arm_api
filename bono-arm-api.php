@@ -3,7 +3,7 @@
 Plugin Name: Bono API for ARMember
 Plugin URI: https://github.com/renatobo/bono_arm_api
 Description: Admin-only REST API access to ARMember payment logs, member activation, and guarded member deletion.
-Version: 1.1.9
+Version: 1.0.9
 Requires at least: 5.0
 Requires PHP: 7.4
 Author: Renato Bonomini
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BONO_ARM_API_VERSION', '1.1.9');
+define('BONO_ARM_API_VERSION', '1.0.9');
 define('BONO_ARM_API_NAMESPACE', 'bono_armember/v1');
 define('BONO_ARM_API_OPTION_ENABLE_TRANSACTIONS', 'bono_arm_api_enable_transactions');
 define('BONO_ARM_API_OPTION_ENABLE_MEMBER_ACTIVATION', 'bono_arm_api_enable_member_activation');
