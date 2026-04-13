@@ -37,16 +37,20 @@ rsync -a \
   --exclude '.github/' \
   --exclude '.claude/' \
   --exclude '.DS_Store' \
+  --exclude '/.env' \
+  --exclude '/.env.*' \
   --exclude '/output' \
   --exclude '/output/**' \
+  --exclude '/temp' \
+  --exclude '/temp/**' \
+  --exclude '/release-notes' \
+  --exclude '/release-notes/**' \
   --exclude '*.zip' \
   --exclude '.gitignore' \
   --exclude 'AGENTS.md' \
-  --exclude 'README.md' \
-  --exclude 'SECURITY.md' \
+  --exclude '*.md' \
   --exclude 'build.sh' \
   --exclude 'release.sh' \
-  --exclude 'ui.md' \
   ./ "$PACKAGE_DIR/"
 
 rm -rf "$PACKAGE_DIR/output"
