@@ -6,12 +6,14 @@ VERSION="${1:-}"
 PLUGIN_FILE="bono-arm-api.php"
 README_FILE="readme.txt"
 PROJECT_README_FILE="README.md"
+OPENAPI_FILE="docs/bono-arm-api-openapi.json"
 NOTES_DIR="release-notes"
 NOTES_FILE=""
 RELEASE_SUPPORT_FILES=(
   "$README_FILE"
   "$PLUGIN_FILE"
   "$PROJECT_README_FILE"
+  "$OPENAPI_FILE"
   "build.sh"
   "release.sh"
   ".gitignore"
@@ -146,21 +148,28 @@ extract_stable_tag_version() {
   sed -n 's/^Stable tag: //p' "$README_FILE" | head -n 1
 }
 
+extract_openapi_version() {
+  sed -n 's/^    "version": "\(.*\)"$/\1/p' "$OPENAPI_FILE" | head -n 1
+}
+
 assert_versions_match() {
   local header_version
   local constant_version
   local stable_tag_version
+  local openapi_version
 
   header_version="$(extract_plugin_header_version)"
   constant_version="$(extract_plugin_constant_version)"
   stable_tag_version="$(extract_stable_tag_version)"
+  openapi_version="$(extract_openapi_version)"
 
-  if [[ "$header_version" != "$VERSION" || "$constant_version" != "$VERSION" || "$stable_tag_version" != "$VERSION" ]]; then
+  if [[ "$header_version" != "$VERSION" || "$constant_version" != "$VERSION" || "$stable_tag_version" != "$VERSION" || "$openapi_version" != "$VERSION" ]]; then
     echo "Version mismatch detected after update:"
     echo "  Plugin header: ${header_version:-missing}"
     echo "  BONO_ARM_API_VERSION: ${constant_version:-missing}"
     echo "  Stable tag: ${stable_tag_version:-missing}"
-    echo "Expected all three to equal $VERSION."
+    echo "  OpenAPI spec: ${openapi_version:-missing}"
+    echo "Expected all four to equal $VERSION."
     exit 1
   fi
 }
@@ -192,6 +201,7 @@ update_file "$README_FILE" "^Stable tag: .*" "Stable tag: $VERSION"
 update_file "$PLUGIN_FILE" "^Version: .*" "Version: $VERSION"
 update_file "$PLUGIN_FILE" "^define('BONO_ARM_API_VERSION', '.*');$" "define('BONO_ARM_API_VERSION', '$VERSION');"
 update_file "$PROJECT_README_FILE" '^Current version: `.*`$' "Current version: \`$VERSION\`"
+update_file "$OPENAPI_FILE" '    "version": ".*"' "    \"version\": \"$VERSION\""
 
 assert_versions_match
 

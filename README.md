@@ -34,7 +34,7 @@ curl -u your_username:your_app_password \
 - Optional member activation email dispatch through ARMember
 - Guarded member deletion through `wp_delete_user()` with ARMember cleanup lifecycle preservation
 - Returns only successful ARMember transactions
-- Access restricted to administrator users
+- Access restricted to users with the `manage_options` capability; deletion also checks permission for the target user
 - Endpoint can be enabled/disabled from plugin settings
 - Compatible with WordPress Application Passwords
 
@@ -97,7 +97,7 @@ Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or upd
 
 ## Authentication
 
-This endpoint requires WordPress authentication and checks for the `administrator` role.
+This endpoint requires WordPress authentication and the `manage_options` capability. Member deletion additionally requires WordPress's object-level `delete_user` capability for the target account.
 
 Recommended method: **Application Passwords**.
 
@@ -124,7 +124,7 @@ curl -u your_username:your_app_password \
 | --- | --- | --- | --- |
 | `arm_invoice_id_gt` | integer | Yes | Return records where invoice ID is greater than this value |
 | `arm_plan_id` | integer | No | Filter by ARMember plan ID |
-| `arm_page` | integer | No | Page number (default: `1`) |
+| `arm_page` | integer | No | Page number (default: `1`, maximum: `10000`) |
 | `arm_perpage` | integer | No | Items per page (default: `50`, maximum: `100`) |
 
 ### Example request
@@ -219,8 +219,11 @@ curl -u your_username:your_app_password \
 Behavior:
 
 - requires administrator authentication
+- requires `manage_options` plus permission to delete the target user
 - requires the member delete endpoint toggle to be enabled in plugin settings
+- rejects deletion of the account authenticating the request
 - currently supports single-site installs only
+- reassigns the deleted member's content to the authenticated administrator
 - uses `wp_delete_user()` as the primary deletion path
 - relies on ARMember's `delete_user` and `deleted_user` lifecycle when available
 - falls back to ARMember's explicit pre/post-delete methods only when those methods are loaded but the hooks are not attached
@@ -236,6 +239,7 @@ Example success response:
       "user_id": 123,
       "user_login": "membername",
       "user_email": "member@example.com",
+      "reassigned_to_user_id": 42,
       "cleanup_mode": "automatic_hooks"
     }
   }
@@ -243,6 +247,8 @@ Example success response:
 ```
 
 ### Common error responses
+
+Errors use meaningful HTTP status codes: `400` for invalid input, `403` for disabled or forbidden operations, `404` for missing users, `500` for failed operations, `501` for unsupported multisite deletion, and `503` when ARMember dependencies are unavailable. WordPress authentication and REST argument validation errors use WordPress's standard REST error shape.
 
 - Endpoint disabled in settings:
 

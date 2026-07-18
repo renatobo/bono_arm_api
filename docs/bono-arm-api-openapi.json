@@ -4,7 +4,7 @@
     "title": "Bono ARM API REST API",
     "summary": "OpenAPI definition for the administrator-protected ARMember transaction and member-management endpoints.",
     "description": "Bono ARM API exposes administrator-only routes for reading ARMember payment transactions, activating ARMember members, and deleting members through a guarded ARMember-aware lifecycle. GitHub Releases is the primary distribution channel for this plugin, with Git Updater as the intended update mechanism for GitHub installs.",
-    "version": "1.0.9"
+    "version": "1.1.0"
   },
   "externalDocs": {
     "description": "Plugin repository",
@@ -72,6 +72,7 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
+              "maximum": 10000,
               "default": 1
             },
             "description": "Page number."
@@ -184,7 +185,7 @@
           "Members"
         ],
         "summary": "Delete an ARMember member",
-        "description": "Deletes the specified WordPress user on supported single-site installs and preserves ARMember's delete lifecycle. Requires administrator authentication and the member delete endpoint to be enabled in plugin settings.",
+        "description": "Deletes the specified WordPress user on supported single-site installs, reassigns content to the authenticated administrator, and preserves ARMember's delete lifecycle. Requires manage_options, permission to delete the target user, and the member delete endpoint to be enabled. Self-deletion is rejected.",
         "security": [
           {
             "basicAuth": []
@@ -445,6 +446,9 @@
                       "user_email": {
                         "type": "string"
                       },
+                      "reassigned_to_user_id": {
+                        "type": "integer"
+                      },
                       "cleanup_mode": {
                         "type": "string",
                         "enum": [
@@ -457,6 +461,7 @@
                       "user_id",
                       "user_login",
                       "user_email",
+                      "reassigned_to_user_id",
                       "cleanup_mode"
                     ]
                   }

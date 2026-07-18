@@ -11,21 +11,23 @@ Admin-only REST API access to ARMember payment logs, ARMember member activation,
 
 == Description ==
 
-Bono API for ARMember adds protected endpoints to retrieve ARMember payment transactions and activate ARMember members for external integrations.
+Bono API for ARMember adds protected endpoints to retrieve ARMember payment transactions, activate ARMember members, and safely delete members for external integrations.
 
 Access control:
-- Endpoint access is restricted to WordPress administrators.
+- Endpoint access requires the `manage_options` capability; deletion also checks permission for the target user.
 - Endpoint availability can be enabled/disabled in plugin settings.
 
 Endpoint:
 - GET /wp-json/bono_armember/v1/arm_payments_log
 - POST /wp-json/bono_armember/v1/members/{user_id}/activate
+- POST /wp-json/bono_armember/v1/members/{user_id}/delete
 
 Features:
 - Filter by minimum invoice ID
 - Optional filter by plan ID
 - Pagination support for large datasets
 - Optional ARMember manual activation email on activation requests
+- Guarded member deletion with capability checks, self-deletion protection, and content reassignment
 - Checked-in OpenAPI 3.1 and Postman specs under `docs/`
 - Compatible with WordPress Application Password authentication
 - Returns successful transactions only
@@ -57,7 +59,7 @@ Required parameter:
 
 Optional parameters:
 - `arm_plan_id` (integer): filter by ARMember plan ID.
-- `arm_page` (integer): page number, default `1`.
+- `arm_page` (integer): page number, default `1`, maximum `10000`.
 - `arm_perpage` (integer): items per page, default `50`, maximum `100`.
 
 Example requests:
@@ -89,13 +91,16 @@ The plugin settings page exposes these files in the "API Specs" tab, together wi
 
 == Upgrade Notice ==
 
+= 1.2.0 =
+Hardens REST authorization and deletion safeguards, improves payment-query efficiency and validation, and conditionally loads extracted admin assets.
+
 = 1.0.9 =
 Clarifies GitHub-first distribution with Git Updater metadata and aligns admin and readme copy for the dual-channel release model.
 
 == Frequently Asked Questions ==
 
 = Who can access the endpoint? =
-Only users with the administrator role.
+Users must have the `manage_options` capability. Member deletion also requires WordPress permission to delete the target user.
 
 = How can I disable the endpoint? =
 Go to Settings -> Bono ARM API and uncheck the endpoint toggle you want to disable.
@@ -106,7 +111,7 @@ It activates the specified ARMember member by setting them to active status, cle
 = Is there a delete-member endpoint? =
 Yes.
 
-The protected `POST /wp-json/bono_armember/v1/members/{user_id}/delete` route deletes the WordPress user on single-site installs and preserves ARMember's safer cleanup lifecycle around `wp_delete_user()`. It uses ARMember's registered delete hooks when they are active and falls back to ARMember's explicit pre-delete and post-delete methods only when those methods are loaded but the hooks are not attached.
+The protected `POST /wp-json/bono_armember/v1/members/{user_id}/delete` route deletes the WordPress user on single-site installs and preserves ARMember's safer cleanup lifecycle around `wp_delete_user()`. It rejects self-deletion, verifies WordPress's object-level delete capability, and reassigns content to the authenticated administrator. It uses ARMember's registered delete hooks when they are active and falls back to ARMember's explicit pre-delete and post-delete methods only when those methods are loaded but the hooks are not attached.
 
 = What happens if `arm_invoice_id_gt` is missing? =
 The API responds with `status: 0` and a message indicating the missing parameter.
@@ -115,6 +120,14 @@ The API responds with `status: 0` and a message indicating the missing parameter
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 1.2.0 =
+* Replaced role-string REST authorization with WordPress capability checks, including object-level deletion permission.
+* Blocked self-deletion and reassigned deleted-member content to the authenticated administrator.
+* Added strict REST validation, bounded pagination, and meaningful HTTP error statuses.
+* Reduced repeated ARMember schema probes and combined the common payment count/page query path.
+* Completed uninstall cleanup for every plugin option and the dependency-check transient.
+* Extracted settings CSS and JavaScript into assets loaded only on the plugin settings screen.
 
 = 1.0.9 =
 * Clarified GitHub-first distribution through Git Updater, with WordPress.org documented as the secondary channel when available.

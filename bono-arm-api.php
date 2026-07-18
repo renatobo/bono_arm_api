@@ -29,9 +29,12 @@ define('BONO_ARM_API_OPTION_ENABLE_MEMBER_ACTIVATION', 'bono_arm_api_enable_memb
 define('BONO_ARM_API_OPTION_ENABLE_MEMBER_DELETE', 'bono_arm_api_enable_member_delete');
 define('BONO_ARM_API_SETTINGS_PAGE', 'bono-arm-api-settings');
 define('BONO_ARM_API_MAX_PER_PAGE', 100);
+define('BONO_ARM_API_MAX_PAGE', 10000);
+define('BONO_ARM_API_TABLE_CHECK_TTL', 5 * MINUTE_IN_SECONDS);
 
 add_action('admin_menu', 'bono_arm_api_add_settings_page');
 add_action('admin_init', 'bono_arm_api_register_settings');
+add_action('admin_enqueue_scripts', 'bono_arm_api_enqueue_admin_assets');
 add_action('plugins_loaded', 'bono_arm_api_load_textdomain');
 add_action('rest_api_init', 'bono_arm_api_register_routes');
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'bono_arm_api_add_plugin_action_links');
@@ -150,14 +153,56 @@ function bono_arm_api_is_member_delete_enabled() {
 }
 
 /**
- * Return whether the current user has the administrator role.
+ * Return whether the current user can manage plugin settings and API access.
  *
  * @return bool
  */
-function bono_arm_api_current_user_is_administrator() {
-    $user = wp_get_current_user();
+function bono_arm_api_current_user_can_manage() {
+    return current_user_can('manage_options');
+}
 
-    return $user instanceof WP_User && in_array('administrator', (array) $user->roles, true);
+/**
+ * Check whether the current user may delete the requested user.
+ *
+ * @param WP_REST_Request $request Current request.
+ * @return bool
+ */
+function bono_arm_api_current_user_can_delete_member($request) {
+    $user_id = absint($request->get_param('user_id'));
+
+    return $user_id > 0
+        && current_user_can('manage_options')
+        && current_user_can('delete_user', $user_id);
+}
+
+/**
+ * Validate a positive integer REST argument.
+ *
+ * @param mixed $value Submitted value.
+ * @return bool
+ */
+function bono_arm_api_validate_positive_integer($value) {
+    return is_numeric($value) && (int) $value > 0 && (string) (int) $value === (string) $value;
+}
+
+/**
+ * Validate a bounded page number.
+ *
+ * @param mixed $value Submitted value.
+ * @return bool
+ */
+function bono_arm_api_validate_page($value) {
+    return bono_arm_api_validate_positive_integer($value) && (int) $value <= BONO_ARM_API_MAX_PAGE;
+}
+
+/**
+ * Validate a bounded page size.
+ *
+ * @param mixed $value Submitted value.
+ * @return bool
+ */
+function bono_arm_api_validate_per_page($value) {
+    return bono_arm_api_validate_positive_integer($value) && (int) $value <= BONO_ARM_API_MAX_PER_PAGE;
 }
 
 /**
@@ -166,10 +211,11 @@ function bono_arm_api_current_user_is_administrator() {
  * @param int    $status Response status flag.
  * @param string $message Response message.
  * @param array  $result Response result payload.
+ * @param int    $http_status HTTP response status code.
  * @return WP_REST_Response
  */
-function bono_arm_api_rest_response($status, $message, $result = array()) {
-    return rest_ensure_response(
+function bono_arm_api_rest_response($status, $message, $result = array(), $http_status = 200) {
+    $response = rest_ensure_response(
         array(
             'status' => (int) $status,
             'message' => $message,
@@ -178,6 +224,10 @@ function bono_arm_api_rest_response($status, $message, $result = array()) {
             ),
         )
     );
+
+    $response->set_status((int) $http_status);
+
+    return $response;
 }
 
 /**
@@ -204,17 +254,53 @@ function bono_arm_api_get_armember_tables() {
 function bono_arm_api_armember_tables_exist() {
     global $wpdb;
 
+    $cache_key = 'bono_arm_api_tables_' . get_current_blog_id();
+    $cached = get_transient($cache_key);
+
+    if (is_array($cached) && isset($cached['exists'])) {
+        return (bool) $cached['exists'];
+    }
+
     $tables = bono_arm_api_get_armember_tables();
 
     foreach ($tables as $table_name) {
         $existing_table = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table_name)));
 
         if ($existing_table !== $table_name) {
+            set_transient($cache_key, array('exists' => false), BONO_ARM_API_TABLE_CHECK_TTL);
             return false;
         }
     }
 
+    set_transient($cache_key, array('exists' => true), BONO_ARM_API_TABLE_CHECK_TTL);
+
     return true;
+}
+
+/**
+ * Enqueue settings-page assets only on this plugin's screen.
+ *
+ * @param string $hook_suffix Current admin screen hook suffix.
+ */
+function bono_arm_api_enqueue_admin_assets($hook_suffix) {
+    if ('settings_page_' . BONO_ARM_API_SETTINGS_PAGE !== $hook_suffix) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'bono-arm-api-admin',
+        plugins_url('assets/admin.css', __FILE__),
+        array(),
+        BONO_ARM_API_VERSION
+    );
+
+    wp_enqueue_script(
+        'bono-arm-api-admin',
+        plugins_url('assets/admin.js', __FILE__),
+        array(),
+        BONO_ARM_API_VERSION,
+        true
+    );
 }
 
 /**
@@ -419,7 +505,7 @@ function bono_arm_api_render_settings_page() {
                             </div>
                             <div class="bono-arm-api-code-card">
                                 <strong><?php esc_html_e('Authentication', 'bono-arm-api'); ?></strong>
-                                <span><?php esc_html_e('Administrator role required with WordPress credentials or Application Passwords.', 'bono-arm-api'); ?></span>
+                                <span><?php esc_html_e('The manage_options capability is required with WordPress credentials or Application Passwords.', 'bono-arm-api'); ?></span>
                             </div>
                         </div>
 
@@ -432,14 +518,14 @@ function bono_arm_api_render_settings_page() {
                             <div class="bono-arm-api-example">
                                 <strong><?php esc_html_e('Basic request', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-example-basic"><?php echo esc_html($example_basic); ?></code>
-                                <button type="button" class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-example-basic');">
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-example-basic">
                                     <?php esc_html_e('Copy', 'bono-arm-api'); ?>
                                 </button>
                             </div>
                             <div class="bono-arm-api-example">
                                 <strong><?php esc_html_e('Authenticated curl example', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-example-curl"><?php echo esc_html($example_curl); ?></code>
-                                <button type="button" class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-example-curl');">
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-example-curl">
                                     <?php esc_html_e('Copy', 'bono-arm-api'); ?>
                                 </button>
                             </div>
@@ -492,14 +578,14 @@ function bono_arm_api_render_settings_page() {
                             <div class="bono-arm-api-example">
                                 <strong><?php esc_html_e('Delete request', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-example-delete"><?php echo esc_html($member_delete_endpoint_example); ?></code>
-                                <button type="button" class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-example-delete');">
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-example-delete">
                                     <?php esc_html_e('Copy', 'bono-arm-api'); ?>
                                 </button>
                             </div>
                             <div class="bono-arm-api-example">
                                 <strong><?php esc_html_e('Authenticated curl example', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-example-delete-curl"><?php echo esc_html($member_delete_curl); ?></code>
-                                <button type="button" class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-example-delete-curl');">
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-example-delete-curl">
                                     <?php esc_html_e('Copy', 'bono-arm-api'); ?>
                                 </button>
                             </div>
@@ -553,14 +639,14 @@ function bono_arm_api_render_settings_page() {
                             <div class="bono-arm-api-example">
                                 <strong><?php esc_html_e('Activation request', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-example-activate"><?php echo esc_html($member_activation_endpoint_example); ?></code>
-                                <button type="button" class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-example-activate');">
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-example-activate">
                                     <?php esc_html_e('Copy', 'bono-arm-api'); ?>
                                 </button>
                             </div>
                             <div class="bono-arm-api-example">
                                 <strong><?php esc_html_e('Authenticated curl example', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-example-activate-curl"><?php echo esc_html($member_activation_curl); ?></code>
-                                <button type="button" class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-example-activate-curl');">
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-example-activate-curl">
                                     <?php esc_html_e('Copy', 'bono-arm-api'); ?>
                                 </button>
                             </div>
@@ -622,7 +708,7 @@ function bono_arm_api_render_settings_page() {
                                 <code id="bono-arm-api-openapi-spec"><?php echo esc_html($openapi_spec_url); ?></code>
                                 <div class="bono-arm-api-example-actions">
                                     <a class="button button-primary" href="<?php echo esc_url($openapi_spec_url); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Open spec', 'bono-arm-api'); ?></a>
-                                    <button class="button button-secondary" onclick="bonoArmApiCopy('bono-arm-api-openapi-spec'); return false;"><?php esc_html_e('Copy link', 'bono-arm-api'); ?></button>
+                                    <button type="button" class="button button-secondary bono-arm-api-copy" data-copy-target="bono-arm-api-openapi-spec"><?php esc_html_e('Copy link', 'bono-arm-api'); ?></button>
                                 </div>
                             </div>
                             <div class="bono-arm-api-example">
@@ -631,7 +717,7 @@ function bono_arm_api_render_settings_page() {
                                 <code id="bono-arm-api-postman-collection"><?php echo esc_html($postman_collection_url); ?></code>
                                 <div class="bono-arm-api-example-actions">
                                     <a class="button button-primary" href="<?php echo esc_url($postman_collection_url); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Open collection', 'bono-arm-api'); ?></a>
-                                    <button class="button button-secondary" onclick="bonoArmApiCopy('bono-arm-api-postman-collection'); return false;"><?php esc_html_e('Copy link', 'bono-arm-api'); ?></button>
+                                    <button type="button" class="button button-secondary bono-arm-api-copy" data-copy-target="bono-arm-api-postman-collection"><?php esc_html_e('Copy link', 'bono-arm-api'); ?></button>
                                 </div>
                             </div>
                         </div>
@@ -642,7 +728,7 @@ function bono_arm_api_render_settings_page() {
                             <div class="bono-arm-api-code-card">
                                 <strong><?php esc_html_e('REST root / Postman baseUrl', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-rest-root"><?php echo esc_html($rest_root_url); ?></code>
-                                <button class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-rest-root'); return false;"><?php esc_html_e('Copy', 'bono-arm-api'); ?></button>
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-rest-root"><?php esc_html_e('Copy', 'bono-arm-api'); ?></button>
                             </div>
                             <div class="bono-arm-api-code-card">
                                 <strong><?php esc_html_e('Authentication', 'bono-arm-api'); ?></strong>
@@ -671,15 +757,15 @@ function bono_arm_api_render_settings_page() {
                             <strong><?php esc_html_e('Supported query parameters', 'bono-arm-api'); ?></strong>
                             <code>arm_invoice_id_gt (required integer)</code>
                             <code>arm_plan_id (optional integer)</code>
-                            <code>arm_page (optional integer, default 1)</code>
-                            <code>arm_perpage (optional integer, default 50)</code>
+                            <code>arm_page (optional integer, default 1, maximum 10000)</code>
+                            <code>arm_perpage (optional integer, default 50, maximum 100)</code>
                         </div>
 
                         <div class="bono-arm-api-example-grid">
                             <div class="bono-arm-api-example">
                                 <strong><?php esc_html_e('Filtered request', 'bono-arm-api'); ?></strong>
                                 <code id="bono-arm-api-example-filtered"><?php echo esc_html($example_filtered); ?></code>
-                                <button type="button" class="button button-secondary button-small" onclick="bonoArmApiCopy('bono-arm-api-example-filtered');">
+                                <button type="button" class="button button-secondary button-small bono-arm-api-copy" data-copy-target="bono-arm-api-example-filtered">
                                     <?php esc_html_e('Copy', 'bono-arm-api'); ?>
                                 </button>
                             </div>
@@ -785,290 +871,6 @@ function bono_arm_api_render_settings_page() {
             </form>
         </div>
 
-        <style>
-            .bono-arm-api-admin {
-                max-width: 1120px;
-                margin-top: 18px;
-            }
-
-            .bono-arm-api-hero {
-                margin: 0 0 16px;
-                border: 1px solid #c8ccd0;
-                background: #f6f7f7;
-                display: block;
-                max-width: 750px;
-                width: fit-content;
-            }
-
-            .bono-arm-api-hero-image {
-                display: block;
-                width: min(100%, 750px);
-                height: auto;
-            }
-
-            .bono-arm-api-headline {
-                margin: 8px 0 20px;
-            }
-
-            .bono-arm-api-headline h1 {
-                margin: 0 0 8px;
-                font-size: 42px;
-                line-height: 1.1;
-                color: #0f172a;
-                font-weight: 400;
-            }
-
-            .bono-arm-api-intro,
-            .bono-arm-api-panel-header p,
-            .bono-arm-api-panel-copy p,
-            .bono-arm-api-note,
-            .bono-arm-api-switch-row p {
-                margin: 0;
-                color: #475569;
-                font-size: 14px;
-                line-height: 1.65;
-            }
-
-            .bono-arm-api-meta {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-                margin: 16px 0 10px;
-            }
-
-            .bono-arm-api-meta a,
-            .bono-arm-api-meta span {
-                display: inline-flex;
-                align-items: center;
-                min-height: 36px;
-                padding: 0 14px;
-                background: #f6f7f7;
-                border: 1px solid #c3c4c7;
-                color: #0f172a;
-                text-decoration: none;
-                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-            }
-
-            .bono-arm-api-meta a:hover {
-                border-color: #2271b1;
-                color: #2271b1;
-            }
-
-            .bono-arm-api-intro {
-                margin-bottom: 20px;
-                max-width: 76ch;
-            }
-
-            .bono-arm-api-intro-secondary {
-                margin-top: -8px;
-            }
-
-            .bono-arm-api-tabs {
-                margin: 24px 0 0;
-            }
-
-            .bono-arm-api-tabs .bono-arm-api-tab {
-                display: inline-block;
-                float: none;
-            }
-
-            .bono-arm-api-tabs .bono-arm-api-tab:focus {
-                box-shadow: 0 0 0 1px #2271b1;
-            }
-
-            .bono-arm-api-shell {
-                display: grid;
-                gap: 18px;
-                padding-top: 20px;
-            }
-
-            .bono-arm-api-panel {
-                display: grid;
-                gap: 18px;
-            }
-
-            .bono-arm-api-panel[hidden] {
-                display: none;
-            }
-
-            .bono-arm-api-panel-header h2,
-            .bono-arm-api-panel-copy h3,
-            .bono-arm-api-switch-row h3 {
-                margin: 0 0 8px;
-                color: #0f172a;
-            }
-
-            .bono-arm-api-card {
-                padding: 22px;
-                border: 1px solid #c3c4c7;
-                background: #ffffff;
-            }
-
-            .bono-arm-api-card-accent {
-                border-left: 4px solid #72aee6;
-                background: #f6f7f7;
-            }
-
-            .bono-arm-api-switch-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: 18px;
-                margin-bottom: 18px;
-            }
-
-            .bono-arm-api-toggle {
-                display: inline-flex;
-                gap: 10px;
-                align-items: center;
-                background: #ffffff;
-                border: 1px solid #c3c4c7;
-                padding: 12px 14px;
-                font-weight: 600;
-                color: #0f172a;
-            }
-
-            .bono-arm-api-grid {
-                display: grid;
-                gap: 14px;
-            }
-
-            .bono-arm-api-grid-two,
-            .bono-arm-api-example-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .bono-arm-api-code-card,
-            .bono-arm-api-example {
-                display: grid;
-                gap: 8px;
-                padding: 14px;
-                border: 1px solid #dcdcde;
-                background: #ffffff;
-            }
-
-            .bono-arm-api-example .button {
-                width: fit-content;
-            }
-
-            .bono-arm-api-example-actions {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-
-            .bono-arm-api-route-list {
-                display: grid;
-                gap: 8px;
-                margin: 18px 0;
-            }
-
-            .bono-arm-api-footer {
-                display: flex;
-                justify-content: flex-start;
-            }
-
-            .bono-arm-api-steps {
-                margin: 0;
-                padding-left: 18px;
-                color: #1e293b;
-            }
-
-            .bono-arm-api-steps li + li {
-                margin-top: 8px;
-            }
-
-            code,
-            pre {
-                background: #f1f1f1;
-                border-radius: 4px;
-            }
-
-            code {
-                padding: 2px 6px;
-            }
-
-            pre {
-                padding: 12px;
-                overflow-x: auto;
-                margin: 0;
-            }
-
-            @media (max-width: 960px) {
-                .bono-arm-api-grid-two,
-                .bono-arm-api-example-grid,
-                .bono-arm-api-switch-row {
-                    grid-template-columns: 1fr;
-                    display: grid;
-                }
-
-                .bono-arm-api-switch-row {
-                    justify-content: stretch;
-                }
-            }
-        </style>
-        <script>
-        function bonoArmApiCopy(elementId) {
-            const source = document.getElementById(elementId);
-
-            if (!source) {
-                return;
-            }
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(source.textContent);
-                return;
-            }
-
-            const temp = document.createElement('textarea');
-            temp.value = source.textContent;
-            document.body.appendChild(temp);
-            temp.select();
-            document.execCommand('copy');
-            document.body.removeChild(temp);
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const tabs = document.querySelectorAll('.bono-arm-api-tab');
-            const panels = document.querySelectorAll('.bono-arm-api-panel');
-
-            function activateTab(targetPanel, updateHash) {
-                let hasMatch = false;
-
-                tabs.forEach(function (item) {
-                    const isTarget = item.getAttribute('data-panel') === targetPanel;
-                    item.classList.toggle('nav-tab-active', isTarget);
-                    item.setAttribute('aria-selected', isTarget ? 'true' : 'false');
-                    hasMatch = hasMatch || isTarget;
-                });
-
-                panels.forEach(function (panel) {
-                    const isTarget = panel.getAttribute('data-panel') === targetPanel;
-                    panel.classList.toggle('is-active', isTarget);
-                    panel.hidden = !isTarget;
-                });
-
-                if (hasMatch && updateHash) {
-                    window.location.hash = targetPanel;
-                }
-            }
-
-            tabs.forEach(function (tab) {
-                tab.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    activateTab(tab.getAttribute('data-panel'), true);
-                });
-            });
-
-            const initialPanel = window.location.hash ? window.location.hash.replace('#', '') : 'api';
-            activateTab(initialPanel, false);
-
-            window.addEventListener('hashchange', function () {
-                const hashPanel = window.location.hash ? window.location.hash.replace('#', '') : 'api';
-                activateTab(hashPanel, false);
-            });
-        });
-        </script>
     </div>
     <?php
 }
@@ -1083,29 +885,33 @@ function bono_arm_api_register_routes() {
         array(
             'methods' => 'GET',
             'callback' => 'bono_get_arm_payments_log',
-            'permission_callback' => 'bono_arm_api_current_user_is_administrator',
+            'permission_callback' => 'bono_arm_api_current_user_can_manage',
             'args' => array(
                 'arm_plan_id' => array(
                     'type' => 'integer',
                     'required' => false,
                     'sanitize_callback' => 'absint',
+                    'validate_callback' => 'bono_arm_api_validate_positive_integer',
                 ),
                 'arm_invoice_id_gt' => array(
                     'type' => 'integer',
-                    'required' => false,
+                    'required' => true,
                     'sanitize_callback' => 'absint',
+                    'validate_callback' => 'bono_arm_api_validate_positive_integer',
                 ),
                 'arm_page' => array(
                     'type' => 'integer',
                     'required' => false,
                     'default' => 1,
                     'sanitize_callback' => 'absint',
+                    'validate_callback' => 'bono_arm_api_validate_page',
                 ),
                 'arm_perpage' => array(
                     'type' => 'integer',
                     'required' => false,
                     'default' => 50,
                     'sanitize_callback' => 'absint',
+                    'validate_callback' => 'bono_arm_api_validate_per_page',
                 ),
             ),
         )
@@ -1117,12 +923,13 @@ function bono_arm_api_register_routes() {
         array(
             'methods' => 'POST',
             'callback' => 'bono_arm_api_activate_member',
-            'permission_callback' => 'bono_arm_api_current_user_is_administrator',
+            'permission_callback' => 'bono_arm_api_current_user_can_manage',
             'args' => array(
                 'user_id' => array(
                     'type' => 'integer',
                     'required' => true,
                     'sanitize_callback' => 'absint',
+                    'validate_callback' => 'bono_arm_api_validate_positive_integer',
                 ),
                 'send_email' => array(
                     'type' => 'boolean',
@@ -1140,12 +947,13 @@ function bono_arm_api_register_routes() {
         array(
             'methods' => 'POST',
             'callback' => 'bono_arm_api_delete_member',
-            'permission_callback' => 'bono_arm_api_current_user_is_administrator',
+            'permission_callback' => 'bono_arm_api_current_user_can_delete_member',
             'args' => array(
                 'user_id' => array(
                     'type' => 'integer',
                     'required' => true,
                     'sanitize_callback' => 'absint',
+                    'validate_callback' => 'bono_arm_api_validate_positive_integer',
                 ),
             ),
         )
@@ -1164,26 +972,32 @@ function bono_get_arm_payments_log($request) {
     if (!bono_arm_api_is_transactions_enabled()) {
         return bono_arm_api_rest_response(
             0,
-            __('API route not enabled, check your settings', 'bono-arm-api')
+            __('API route not enabled, check your settings', 'bono-arm-api'),
+            array(),
+            403
         );
     }
 
     $arm_plan_id = $request->get_param('arm_plan_id');
     $min_invoice_id = $request->get_param('arm_invoice_id_gt');
-    $page = max(1, (int) $request->get_param('arm_page'));
-    $per_page = min(BONO_ARM_API_MAX_PER_PAGE, max(1, (int) $request->get_param('arm_perpage')));
+    $page = (int) $request->get_param('arm_page');
+    $per_page = (int) $request->get_param('arm_perpage');
 
     if (!$min_invoice_id) {
         return bono_arm_api_rest_response(
             0,
-            __('Missing parameter(s): arm_invoice_id_gt', 'bono-arm-api')
+            __('Missing parameter(s): arm_invoice_id_gt', 'bono-arm-api'),
+            array(),
+            400
         );
     }
 
     if (!bono_arm_api_armember_tables_exist()) {
         return bono_arm_api_rest_response(
             0,
-            __('ARMember payment tables are not available. Ensure ARMember is installed and active.', 'bono-arm-api')
+            __('ARMember payment tables are not available. Ensure ARMember is installed and active.', 'bono-arm-api'),
+            array(),
+            503
         );
     }
 
@@ -1199,15 +1013,6 @@ function bono_get_arm_payments_log($request) {
         $where .= $wpdb->prepare(' AND a.arm_plan_id = %d', $arm_plan_id);
     }
 
-    $total_count = $wpdb->get_var(
-        "
-        SELECT COUNT(*)
-        FROM {$tables['payment_log']} AS a
-        JOIN {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
-        $where
-    "
-    );
-
     $query = $wpdb->prepare(
         "
         SELECT
@@ -1221,11 +1026,18 @@ function bono_get_arm_payments_log($request) {
             IF(a.arm_extra_vars LIKE '%manual_by%',
                 SUBSTRING_INDEX(SUBSTRING_INDEX(a.arm_extra_vars, 's:13:\"', -1), '\";}', 1),
                 '') AS notes,
-            a.arm_transaction_status AS arm_transaction_status
+            a.arm_transaction_status AS arm_transaction_status,
+            totals.total_count AS bono_total_count
         FROM
             {$tables['payment_log']} AS a
         JOIN
             {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
+        CROSS JOIN (
+            SELECT COUNT(*) AS total_count
+            FROM {$tables['payment_log']} AS a
+            JOIN {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
+            $where
+        ) AS totals
         $where
         ORDER BY a.arm_invoice_id DESC
         LIMIT %d OFFSET %d
@@ -1239,7 +1051,9 @@ function bono_get_arm_payments_log($request) {
     if (!empty($wpdb->last_error)) {
         return bono_arm_api_rest_response(
             0,
-            __('Unable to load ARMember payment records right now.', 'bono-arm-api')
+            __('Unable to load ARMember payment records right now.', 'bono-arm-api'),
+            array(),
+            500
         );
     }
 
@@ -1247,7 +1061,24 @@ function bono_get_arm_payments_log($request) {
         $results = array();
     }
 
+    $total_count = 0;
+
+    if (!empty($results)) {
+        $total_count = (int) $results[0]['bono_total_count'];
+    } elseif ($page > 1) {
+        $total_count = (int) $wpdb->get_var(
+            "
+            SELECT COUNT(*)
+            FROM {$tables['payment_log']} AS a
+            JOIN {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
+            $where
+        "
+        );
+    }
+
     foreach ($results as &$row) {
+        unset($row['bono_total_count']);
+
         foreach ($row as $key => $value) {
             $row[$key] = is_null($value) ? '' : $value;
         }
@@ -1287,21 +1118,27 @@ function bono_arm_api_activate_member($request) {
     if (!bono_arm_api_is_member_activation_enabled()) {
         return bono_arm_api_rest_response(
             0,
-            __('API route not enabled, check your settings', 'bono-arm-api')
+            __('API route not enabled, check your settings', 'bono-arm-api'),
+            array(),
+            403
         );
     }
 
     if (!$user_id) {
         return bono_arm_api_rest_response(
             0,
-            __('Missing or invalid parameter: user_id', 'bono-arm-api')
+            __('Missing or invalid parameter: user_id', 'bono-arm-api'),
+            array(),
+            400
         );
     }
 
     if (!bono_arm_api_armember_tables_exist()) {
         return bono_arm_api_rest_response(
             0,
-            __('ARMember payment tables are not available. Ensure ARMember is installed and active.', 'bono-arm-api')
+            __('ARMember payment tables are not available. Ensure ARMember is installed and active.', 'bono-arm-api'),
+            array(),
+            503
         );
     }
 
@@ -1310,14 +1147,18 @@ function bono_arm_api_activate_member($request) {
     if (!$user instanceof WP_User) {
         return bono_arm_api_rest_response(
             0,
-            __('User not found.', 'bono-arm-api')
+            __('User not found.', 'bono-arm-api'),
+            array(),
+            404
         );
     }
 
     if (!function_exists('arm_set_member_status')) {
         return bono_arm_api_rest_response(
             0,
-            __('ARMember member status functions are not available. Ensure ARMember is fully loaded.', 'bono-arm-api')
+            __('ARMember member status functions are not available. Ensure ARMember is fully loaded.', 'bono-arm-api'),
+            array(),
+            503
         );
     }
 
@@ -1358,32 +1199,59 @@ function bono_arm_api_activate_member($request) {
  */
 function bono_arm_api_delete_member($request) {
     $user_id = absint($request->get_param('user_id'));
+    $reassign_user_id = get_current_user_id();
 
     if (!bono_arm_api_is_member_delete_enabled()) {
         return bono_arm_api_rest_response(
             0,
-            __('API route not enabled, check your settings', 'bono-arm-api')
+            __('API route not enabled, check your settings', 'bono-arm-api'),
+            array(),
+            403
         );
     }
 
     if (!$user_id) {
         return bono_arm_api_rest_response(
             0,
-            __('Missing or invalid parameter: user_id', 'bono-arm-api')
+            __('Missing or invalid parameter: user_id', 'bono-arm-api'),
+            array(),
+            400
+        );
+    }
+
+    if ($user_id === $reassign_user_id) {
+        return bono_arm_api_rest_response(
+            0,
+            __('You cannot delete the account used to authenticate this request.', 'bono-arm-api'),
+            array(),
+            403
+        );
+    }
+
+    if (!$reassign_user_id || !get_user_by('ID', $reassign_user_id)) {
+        return bono_arm_api_rest_response(
+            0,
+            __('A valid content reassignment user is required before deleting a member.', 'bono-arm-api'),
+            array(),
+            500
         );
     }
 
     if (is_multisite()) {
         return bono_arm_api_rest_response(
             0,
-            __('Deleting members through this endpoint is not supported on multisite installs.', 'bono-arm-api')
+            __('Deleting members through this endpoint is not supported on multisite installs.', 'bono-arm-api'),
+            array(),
+            501
         );
     }
 
     if (!bono_arm_api_armember_tables_exist()) {
         return bono_arm_api_rest_response(
             0,
-            __('ARMember payment tables are not available. Ensure ARMember is installed and active.', 'bono-arm-api')
+            __('ARMember payment tables are not available. Ensure ARMember is installed and active.', 'bono-arm-api'),
+            array(),
+            503
         );
     }
 
@@ -1392,7 +1260,9 @@ function bono_arm_api_delete_member($request) {
     if (!$user instanceof WP_User) {
         return bono_arm_api_rest_response(
             0,
-            __('User not found.', 'bono-arm-api')
+            __('User not found.', 'bono-arm-api'),
+            array(),
+            404
         );
     }
 
@@ -1403,7 +1273,9 @@ function bono_arm_api_delete_member($request) {
     if (!$hooks_active && !$can_call_armember_delete) {
         return bono_arm_api_rest_response(
             0,
-            __('ARMember delete lifecycle is not available. Ensure ARMember is fully loaded before deleting members.', 'bono-arm-api')
+            __('ARMember delete lifecycle is not available. Ensure ARMember is fully loaded before deleting members.', 'bono-arm-api'),
+            array(),
+            503
         );
     }
 
@@ -1414,7 +1286,9 @@ function bono_arm_api_delete_member($request) {
     if (!function_exists('wp_delete_user')) {
         return bono_arm_api_rest_response(
             0,
-            __('WordPress user deletion functions are not available.', 'bono-arm-api')
+            __('WordPress user deletion functions are not available.', 'bono-arm-api'),
+            array(),
+            503
         );
     }
 
@@ -1423,20 +1297,22 @@ function bono_arm_api_delete_member($request) {
     $cleanup_mode = $hooks_active ? 'automatic_hooks' : 'manual_fallback';
 
     if (!$hooks_active && $can_call_armember_delete) {
-        $arm_members_manager->arm_before_delete_user_action($user_id, 1);
+        $arm_members_manager->arm_before_delete_user_action($user_id, $reassign_user_id);
     }
 
-    $deleted = wp_delete_user($user_id, 1);
+    $deleted = wp_delete_user($user_id, $reassign_user_id);
 
     if (!$deleted) {
         return bono_arm_api_rest_response(
             0,
-            __('Member deletion failed.', 'bono-arm-api')
+            __('Member deletion failed.', 'bono-arm-api'),
+            array(),
+            500
         );
     }
 
     if (!$hooks_active && $can_call_armember_delete) {
-        $arm_members_manager->arm_after_deleted_user_action($user_id, 1);
+        $arm_members_manager->arm_after_deleted_user_action($user_id, $reassign_user_id);
     }
 
     return bono_arm_api_rest_response(
@@ -1446,6 +1322,7 @@ function bono_arm_api_delete_member($request) {
             'user_id' => $user_id,
             'user_login' => $deleted_user_login,
             'user_email' => $deleted_user_email,
+            'reassigned_to_user_id' => $reassign_user_id,
             'cleanup_mode' => $cleanup_mode,
         )
     );

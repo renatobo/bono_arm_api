@@ -1,0 +1,221 @@
+.bono-arm-api-admin {
+    max-width: 1120px;
+    margin-top: 18px;
+}
+
+.bono-arm-api-hero {
+    margin: 0 0 16px;
+    border: 1px solid #c8ccd0;
+    background: #f6f7f7;
+    display: block;
+    max-width: 750px;
+    width: fit-content;
+}
+
+.bono-arm-api-hero-image {
+    display: block;
+    width: min(100%, 750px);
+    height: auto;
+}
+
+.bono-arm-api-headline {
+    margin: 8px 0 20px;
+}
+
+.bono-arm-api-headline h1 {
+    margin: 0 0 8px;
+    font-size: 42px;
+    line-height: 1.1;
+    color: #0f172a;
+    font-weight: 400;
+}
+
+.bono-arm-api-intro,
+.bono-arm-api-panel-header p,
+.bono-arm-api-panel-copy p,
+.bono-arm-api-note,
+.bono-arm-api-switch-row p {
+    margin: 0;
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.bono-arm-api-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0 10px;
+}
+
+.bono-arm-api-meta a,
+.bono-arm-api-meta span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 14px;
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+    color: #0f172a;
+    text-decoration: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.bono-arm-api-meta a:hover {
+    border-color: #2271b1;
+    color: #2271b1;
+}
+
+.bono-arm-api-intro {
+    margin-bottom: 20px;
+    max-width: 76ch;
+}
+
+.bono-arm-api-intro-secondary {
+    margin-top: -8px;
+}
+
+.bono-arm-api-tabs {
+    margin: 24px 0 0;
+}
+
+.bono-arm-api-tabs .bono-arm-api-tab {
+    display: inline-block;
+    float: none;
+}
+
+.bono-arm-api-tabs .bono-arm-api-tab:focus {
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.bono-arm-api-shell {
+    display: grid;
+    gap: 18px;
+    padding-top: 20px;
+}
+
+.bono-arm-api-panel {
+    display: grid;
+    gap: 18px;
+}
+
+.bono-arm-api-panel[hidden] {
+    display: none;
+}
+
+.bono-arm-api-panel-header h2,
+.bono-arm-api-panel-copy h3,
+.bono-arm-api-switch-row h3 {
+    margin: 0 0 8px;
+    color: #0f172a;
+}
+
+.bono-arm-api-card {
+    padding: 22px;
+    border: 1px solid #c3c4c7;
+    background: #ffffff;
+}
+
+.bono-arm-api-card-accent {
+    border-left: 4px solid #72aee6;
+    background: #f6f7f7;
+}
+
+.bono-arm-api-switch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.bono-arm-api-toggle {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #c3c4c7;
+    padding: 12px 14px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.bono-arm-api-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.bono-arm-api-grid-two,
+.bono-arm-api-example-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bono-arm-api-code-card,
+.bono-arm-api-example {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+    border: 1px solid #dcdcde;
+    background: #ffffff;
+}
+
+.bono-arm-api-example .button {
+    width: fit-content;
+}
+
+.bono-arm-api-example-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.bono-arm-api-route-list {
+    display: grid;
+    gap: 8px;
+    margin: 18px 0;
+}
+
+.bono-arm-api-footer {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.bono-arm-api-steps {
+    margin: 0;
+    padding-left: 18px;
+    color: #1e293b;
+}
+
+.bono-arm-api-steps li + li {
+    margin-top: 8px;
+}
+
+code,
+pre {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+code {
+    padding: 2px 6px;
+}
+
+pre {
+    padding: 12px;
+    overflow-x: auto;
+    margin: 0;
+}
+
+@media (max-width: 960px) {
+    .bono-arm-api-grid-two,
+    .bono-arm-api-example-grid,
+    .bono-arm-api-switch-row {
+        grid-template-columns: 1fr;
+        display: grid;
+    }
+
+    .bono-arm-api-switch-row {
+        justify-content: stretch;
+    }
+}
+
