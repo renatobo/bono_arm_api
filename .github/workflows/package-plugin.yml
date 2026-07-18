@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
 
@@ -37,12 +39,20 @@ jobs:
             echo "Failed to locate built zip file."
             exit 1
           fi
+          sha256sum "$ZIP_PATH" > "$ZIP_PATH.sha256"
           echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub release and upload asset
-        uses: softprops/action-gh-release@v2
+      - name: Attest plugin package
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
-          files: ${{ steps.build.outputs.zip_path }}
+          subject-path: ${{ steps.build.outputs.zip_path }}
+
+      - name: Create GitHub release and upload asset
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: |
+            ${{ steps.build.outputs.zip_path }}
+            ${{ steps.build.outputs.zip_path }}.sha256
           body_path: ${{ steps.release_meta.outputs.notes_file }}
           fail_on_unmatched_files: true
         env:

@@ -7,6 +7,7 @@ PLUGIN_FILE="bono-arm-api.php"
 README_FILE="readme.txt"
 PROJECT_README_FILE="README.md"
 OPENAPI_FILE="docs/bono-arm-api-openapi.json"
+OPENAPI_V2_FILE="docs/bono-arm-api-openapi-v2.json"
 NOTES_DIR="release-notes"
 NOTES_FILE=""
 RELEASE_SUPPORT_FILES=(
@@ -14,6 +15,7 @@ RELEASE_SUPPORT_FILES=(
   "$PLUGIN_FILE"
   "$PROJECT_README_FILE"
   "$OPENAPI_FILE"
+  "$OPENAPI_V2_FILE"
   "build.sh"
   "release.sh"
   ".gitignore"
@@ -141,7 +143,7 @@ extract_plugin_header_version() {
 }
 
 extract_plugin_constant_version() {
-  sed -n "s/^define('BONO_ARM_API_VERSION', '\(.*\)');$/\1/p" "$PLUGIN_FILE" | head -n 1
+  sed -n "s/^define( 'BONO_ARM_API_VERSION', '\(.*\)' );$/\1/p" "$PLUGIN_FILE" | head -n 1
 }
 
 extract_stable_tag_version() {
@@ -152,24 +154,31 @@ extract_openapi_version() {
   sed -n 's/^    "version": "\(.*\)"$/\1/p' "$OPENAPI_FILE" | head -n 1
 }
 
+extract_openapi_v2_version() {
+  sed -n 's/^    "version": "\(.*\)"$/\1/p' "$OPENAPI_V2_FILE" | head -n 1
+}
+
 assert_versions_match() {
   local header_version
   local constant_version
   local stable_tag_version
   local openapi_version
+  local openapi_v2_version
 
   header_version="$(extract_plugin_header_version)"
   constant_version="$(extract_plugin_constant_version)"
   stable_tag_version="$(extract_stable_tag_version)"
   openapi_version="$(extract_openapi_version)"
+  openapi_v2_version="$(extract_openapi_v2_version)"
 
-  if [[ "$header_version" != "$VERSION" || "$constant_version" != "$VERSION" || "$stable_tag_version" != "$VERSION" || "$openapi_version" != "$VERSION" ]]; then
+  if [[ "$header_version" != "$VERSION" || "$constant_version" != "$VERSION" || "$stable_tag_version" != "$VERSION" || "$openapi_version" != "$VERSION" || "$openapi_v2_version" != "$VERSION" ]]; then
     echo "Version mismatch detected after update:"
     echo "  Plugin header: ${header_version:-missing}"
     echo "  BONO_ARM_API_VERSION: ${constant_version:-missing}"
     echo "  Stable tag: ${stable_tag_version:-missing}"
     echo "  OpenAPI spec: ${openapi_version:-missing}"
-    echo "Expected all four to equal $VERSION."
+    echo "  OpenAPI v2 spec: ${openapi_v2_version:-missing}"
+    echo "Expected every version reference to equal $VERSION."
     exit 1
   fi
 }
@@ -200,8 +209,10 @@ remove_tracked_release_archives
 update_file "$README_FILE" "^Stable tag: .*" "Stable tag: $VERSION"
 update_file "$PLUGIN_FILE" "^Version: .*" "Version: $VERSION"
 update_file "$PLUGIN_FILE" "^define('BONO_ARM_API_VERSION', '.*');$" "define('BONO_ARM_API_VERSION', '$VERSION');"
+update_file "$PLUGIN_FILE" "^define( 'BONO_ARM_API_VERSION', '.*' );$" "define( 'BONO_ARM_API_VERSION', '$VERSION' );"
 update_file "$PROJECT_README_FILE" '^Current version: `.*`$' "Current version: \`$VERSION\`"
 update_file "$OPENAPI_FILE" '    "version": ".*"' "    \"version\": \"$VERSION\""
+update_file "$OPENAPI_V2_FILE" '    "version": ".*"' "    \"version\": \"$VERSION\""
 
 assert_versions_match
 
@@ -219,4 +230,5 @@ GitHub Actions will now:
 - build the WordPress plugin zip with ./build.sh
 - create or update the GitHub Release for $TAG using $NOTES_FILE
 - attach the generated versioned zip asset
+- attach its SHA-256 checksum and GitHub provenance attestation
 MSG

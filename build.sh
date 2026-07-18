@@ -45,12 +45,19 @@ rsync -a \
   --exclude '/temp/**' \
   --exclude '/release-notes' \
   --exclude '/release-notes/**' \
+  --exclude '/tests' \
+  --exclude '/tests/**' \
+  --exclude '/vendor' \
+  --exclude '/vendor/**' \
   --exclude '*.zip' \
   --exclude '.gitignore' \
   --exclude 'AGENTS.md' \
   --exclude '*.md' \
   --exclude 'build.sh' \
   --exclude 'release.sh' \
+  --exclude 'composer.*' \
+  --exclude 'phpcs.xml.dist' \
+  --exclude 'phpunit.xml.dist' \
   ./ "$PACKAGE_DIR/"
 
 rm -rf "$PACKAGE_DIR/output"

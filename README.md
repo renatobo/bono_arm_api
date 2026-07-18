@@ -1,13 +1,13 @@
 # Bono API for ARMember
 
-[![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
-[![Tested up to](https://img.shields.io/badge/Tested%20up%20to-6.9.4-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
+[![WordPress](https://img.shields.io/badge/WordPress-5.6%2B-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
+[![Tested up to](https://img.shields.io/badge/Tested%20up%20to-7.0-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![Release](https://img.shields.io/github/v/release/renatobo/bono_arm_api?label=release)](https://github.com/renatobo/bono_arm_api/releases)
 [![License: GPL v2 or later](https://img.shields.io/badge/License-GPL%20v2%20or%20later-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
 WordPress plugin that exposes protected REST API endpoints for ARMember payment logs, admin-triggered member activation, and guarded member deletion.
 
-Current version: `1.2.0`
+Current version: `2.0.0`
 
 ## Quick start
 
@@ -28,19 +28,22 @@ curl -u your_username:your_app_password \
 - Dedicated endpoint: `GET /wp-json/bono_armember/v1/arm_payments_log`
 - Dedicated endpoint: `POST /wp-json/bono_armember/v1/members/{user_id}/activate`
 - Dedicated endpoint: `POST /wp-json/bono_armember/v1/members/{user_id}/delete`
+- Schema-first v2 endpoints with standard REST errors and HTTP methods
+- Cursor-based payment pagination without a count query by default
 - Checked-in API specs under `docs/` for OpenAPI 3.1 and Postman
 - Filters by invoice threshold and ARMember plan
 - Pagination support for large transaction sets
 - Optional member activation email dispatch through ARMember
 - Guarded member deletion through `wp_delete_user()` with ARMember cleanup lifecycle preservation
 - Returns only successful ARMember transactions
-- Access restricted to users with the `manage_options` capability; deletion also checks permission for the target user
+- Dedicated least-privilege capabilities for payment reads, activation, and deletion
 - Endpoint can be enabled/disabled from plugin settings
 - Compatible with WordPress Application Passwords
 
 ## Requirements
 
-- WordPress `5.0+`
+- WordPress `5.6+` (tested through WordPress `7.0`)
+- PHP `7.4+`
 - ARMember plugin installed and active
 - HTTPS-enabled site (recommended for secure API auth)
 
@@ -71,9 +74,10 @@ That creates a Git Updater-compatible release asset like `bono_arm_api-x.y.z.zip
 Checked-in API artifacts are available in the plugin and repo under:
 
 - `docs/bono-arm-api-openapi.json`
+- `docs/bono-arm-api-openapi-v2.json`
 - `docs/bono-arm-api-postman-collection.json`
 
-The settings page exposes both files in the **API Specs** tab, along with the current site REST root to use as the Postman `baseUrl`.
+The repository includes both versioned OpenAPI contracts and the v1 Postman collection.
 
 ## Releases
 
@@ -93,11 +97,29 @@ That script:
 - verifies that all version references match
 - requires `release-notes/x.y.z.md` with the standard release-note headings
 
-Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or updates the GitHub Release using the checked-in release notes file, and uploads the generated zip asset automatically.
+Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or updates the GitHub Release using the checked-in release notes file, and uploads the zip, SHA-256 checksum, and provenance attestation.
 
 ## Authentication
 
-This endpoint requires WordPress authentication and the `manage_options` capability. Member deletion additionally requires WordPress's object-level `delete_user` capability for the target account.
+Endpoints require WordPress authentication and their dedicated capability. Administrators receive all three capabilities on activation. Member deletion additionally requires WordPress's object-level `delete_user` capability for the target account.
+
+| Operation | Capability |
+| --- | --- |
+| Read payments | `bono_arm_api_read_payments` |
+| Activate members | `bono_arm_api_activate_members` |
+| Delete members | `bono_arm_api_delete_members` |
+
+## Version 2 API
+
+The v1 API remains supported without route or parameter changes. New integrations should prefer v2:
+
+- `GET /wp-json/bono_armember/v2/payments?after_invoice_id=0&per_page=50`
+- `POST /wp-json/bono_armember/v2/members/{user_id}/activate`
+- `DELETE /wp-json/bono_armember/v2/members/{user_id}?reassign_user_id=456`
+
+Payment responses provide `has_more` and `next_cursor`. Set `include_totals=true` only when an exact total is needed. The default `context=view` excludes payer email and administrative notes; trusted clients with the read capability can explicitly request `context=edit`.
+
+WordPress 7 registers the private, read-only `bono-arm-api/get-status` ability. Destructive operations are intentionally not exposed through the Abilities API. See `docs/wordpress-7-compatibility.md` for the compatibility matrix and ARMember fixture policy.
 
 Recommended method: **Application Passwords**.
 
@@ -219,7 +241,7 @@ curl -u your_username:your_app_password \
 Behavior:
 
 - requires administrator authentication
-- requires `manage_options` plus permission to delete the target user
+- requires `bono_arm_api_delete_members` plus permission to delete the target user
 - requires the member delete endpoint toggle to be enabled in plugin settings
 - rejects deletion of the account authenticating the request
 - currently supports single-site installs only
