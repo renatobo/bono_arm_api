@@ -39,7 +39,9 @@ jobs:
             echo "Failed to locate built zip file."
             exit 1
           fi
-          sha256sum "$ZIP_PATH" > "$ZIP_PATH.sha256"
+          ZIP_DIR="$(dirname "$ZIP_PATH")"
+          ZIP_NAME="$(basename "$ZIP_PATH")"
+          (cd "$ZIP_DIR" && sha256sum "$ZIP_NAME" > "$ZIP_NAME.sha256")
           echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Attest plugin package
