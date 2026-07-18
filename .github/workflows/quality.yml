@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main, wp7]
+  workflow_call:
 
 jobs:
   static-analysis:
