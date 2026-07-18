@@ -43,6 +43,8 @@ Guidance for coding agents and contributors working in this repository.
 ## Release Notes
 
 - Packaging workflow is defined under `.github/workflows/`.
+- The `quality.yml` workflow is the release gate; keep its WordPress/PHP matrix and immutable action pins current.
+- `release.sh` is the only supported tag-creation path. Do not add an automatic stable-tag workflow.
 - Release zip expects plugin files at repo root, including `*.php`, `readme.txt`, and `LICENSE`.
 - Checked-in API specs live under `docs/` and should stay aligned with the plugin routes.
 - GitHub Releases must publish the matching checked-in notes file from `release-notes/<version>.md`.

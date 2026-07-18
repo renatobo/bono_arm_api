@@ -1,0 +1,37 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bono API for ARMember v2",
+    "version": "1.2.0"
+  },
+  "paths": {
+    "/wp-json/bono_armember/v2/payments": {
+      "get": {
+        "summary": "List successful payments using cursor pagination",
+        "parameters": [
+          {"name": "after_invoice_id", "in": "query", "schema": {"type": "integer", "minimum": 0, "default": 0}},
+          {"name": "plan_id", "in": "query", "schema": {"type": "integer", "minimum": 1}},
+          {"name": "per_page", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}},
+          {"name": "context", "in": "query", "schema": {"type": "string", "enum": ["view", "edit"], "default": "view"}},
+          {"name": "include_totals", "in": "query", "schema": {"type": "boolean", "default": false}}
+        ],
+        "responses": {"200": {"description": "Payment page"}, "401": {"description": "Authentication required"}, "403": {"description": "Insufficient capability"}, "503": {"description": "Feature or ARMember unavailable"}}
+      }
+    },
+    "/wp-json/bono_armember/v2/members/{user_id}/activate": {
+      "post": {
+        "summary": "Activate a member",
+        "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}}],
+        "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"send_email": {"type": "boolean", "default": false}}}}}},
+        "responses": {"200": {"description": "Member activated"}, "404": {"description": "User not found"}, "503": {"description": "Feature or ARMember unavailable"}}
+      }
+    },
+    "/wp-json/bono_armember/v2/members/{user_id}": {
+      "delete": {
+        "summary": "Delete a single-site member and reassign content",
+        "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}}, {"name": "reassign_user_id", "in": "query", "required": true, "schema": {"type": "integer", "minimum": 1}}],
+        "responses": {"200": {"description": "Member deleted"}, "403": {"description": "Forbidden or self-deletion"}, "404": {"description": "User not found"}, "501": {"description": "Multisite unsupported"}}
+      }
+    }
+  }
+}

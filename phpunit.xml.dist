@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<phpunit bootstrap="tests/bootstrap.php" colors="true">
+	<testsuites>
+		<testsuite name="Bono ARM API">
+			<directory suffix="Test.php">tests</directory>
+		</testsuite>
+	</testsuites>
+	<php>
+		<const name="WP_DEBUG" value="true"/>
+	</php>
+</phpunit>
