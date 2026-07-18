@@ -66,6 +66,10 @@ jobs:
           db_password: root
           db_name: wordpress_test
           db_host: 127.0.0.1
+      - name: Create test database
+        run: mysql --host=127.0.0.1 --user=root --execute="CREATE DATABASE IF NOT EXISTS wordpress_test;"
+        env:
+          MYSQL_PWD: root
       - run: composer install --no-interaction --prefer-dist
       - run: vendor/bin/phpunit
         env:
