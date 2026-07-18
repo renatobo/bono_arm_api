@@ -2,7 +2,7 @@
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 1.2.0
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -98,6 +98,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.0.0 =
+Adds the schema-first v2 API, least-privilege capabilities, WordPress 7 integration, and a fully verified release-quality workflow while preserving all v1 routes.
+
 = 1.2.0 =
 Hardens REST authorization and deletion safeguards, improves payment-query efficiency and validation, and conditionally loads extracted admin assets.
 
@@ -128,11 +131,15 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 
 == Changelog ==
 
-= 1.2.0 =
+= 2.0.0 =
 * Added a schema-first v2 API with cursor pagination, field contexts, standard errors, and HTTP DELETE semantics.
 * Added dedicated capabilities, privacy-policy guidance, and a safe read-only WordPress Abilities API status operation.
 * Split the plugin into focused controllers, repository, ARMember gateway, admin, and compatibility modules.
 * Added WordPress 7/PHP compatibility CI, REST integration tests, WPCS, Plugin Check, checksums, and release attestations.
+
+= 1.2.0 =
+* Hardened REST authorization and member-deletion safeguards.
+* Improved payment-query efficiency, argument validation, and conditional admin asset loading.
 
 = 1.0.9 =
 * Clarified GitHub-first distribution through Git Updater, with WordPress.org documented as the secondary channel when available.
