@@ -218,7 +218,11 @@ assert_versions_match
 
 stage_release_support_files
 git add -- "$NOTES_FILE"
-git commit -m "Bump version to $VERSION"
+if git diff --cached --quiet; then
+  echo "Version $VERSION metadata is already committed; creating the release tag from HEAD."
+else
+  git commit -m "Bump version to $VERSION"
+fi
 git tag -a "$TAG" -m "Release $VERSION"
 git push origin main
 git push origin "$TAG"
