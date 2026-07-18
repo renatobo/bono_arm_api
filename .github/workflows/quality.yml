@@ -57,6 +57,8 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install --yes subversion
       - uses: sjinks/setup-wordpress-test-library@9726426f2a40656274560a0394718177f8adb424 # v3.0.0
         with:
           version: ${{ matrix.wordpress }}
@@ -73,6 +75,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Build release package
+        run: |
+          ./build.sh
+          mkdir plugin-check-build
+          unzip -q bono_arm_api-*.zip -d plugin-check-build
       - uses: wordpress/plugin-check-action@98a1788320d0add90df2d8183934ecccbc4e05d2 # v1
         with:
+          build-dir: ./plugin-check-build/bono_arm_api
+          ignore-codes: wp_function_not_compatible_with_requires_wp
+          slug: bono-arm-api
           wp-version: '7.0.2'

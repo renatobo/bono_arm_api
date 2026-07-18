@@ -50,6 +50,7 @@ final class Payment_Repository {
 		$tables = $this->tables();
 		$where  = $this->where_sql( $minimum_invoice_id, $plan_id );
 		$offset = ( $page - 1 ) * $per_page;
+		$manual = '%' . $wpdb->esc_like( 'manual_by' ) . '%';
 		$query  = $wpdb->prepare(
 			"SELECT
 				a.arm_user_id AS id,
@@ -59,7 +60,7 @@ final class Payment_Repository {
 				CONCAT(a.arm_currency, ' ', a.arm_amount) AS arm_paid_amount,
 				a.arm_payment_gateway,
 				a.arm_payment_date,
-				IF(a.arm_extra_vars LIKE '%%manual_by%%',
+				IF(a.arm_extra_vars LIKE %s,
 					SUBSTRING_INDEX(SUBSTRING_INDEX(a.arm_extra_vars, 's:13:\"', -1), '\";}', 1),
 					'') AS notes,
 				a.arm_transaction_status,
@@ -75,10 +76,12 @@ final class Payment_Repository {
 			{$where}
 			ORDER BY a.arm_invoice_id DESC
 			LIMIT %d OFFSET %d",
+			$manual,
 			$per_page,
 			$offset
 		);
-		$rows   = $wpdb->get_results( $query, ARRAY_A );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query values are prepared above; table names come from the trusted WordPress prefix.
+		$rows = $wpdb->get_results( $query, ARRAY_A );
 
 		if ( $wpdb->last_error ) {
 			return new WP_Error( 'bono_arm_api_database_error', __( 'Unable to load ARMember payment records.', 'bono-arm-api' ), array( 'status' => 500 ) );
@@ -113,6 +116,7 @@ final class Payment_Repository {
 		$tables = $this->tables();
 		$where  = $this->where_sql( $after_invoice_id, $plan_id );
 		$limit  = $per_page + 1;
+		$manual = '%' . $wpdb->esc_like( 'manual_by' ) . '%';
 		$query  = $wpdb->prepare(
 			"SELECT
 				a.arm_user_id AS id,
@@ -122,7 +126,7 @@ final class Payment_Repository {
 				CONCAT(a.arm_currency, ' ', a.arm_amount) AS arm_paid_amount,
 				a.arm_payment_gateway,
 				a.arm_payment_date,
-				IF(a.arm_extra_vars LIKE '%%manual_by%%',
+				IF(a.arm_extra_vars LIKE %s,
 					SUBSTRING_INDEX(SUBSTRING_INDEX(a.arm_extra_vars, 's:13:\"', -1), '\";}', 1),
 					'') AS notes,
 				a.arm_transaction_status
@@ -131,9 +135,11 @@ final class Payment_Repository {
 			{$where}
 			ORDER BY a.arm_invoice_id ASC
 			LIMIT %d",
+			$manual,
 			$limit
 		);
-		$rows   = $wpdb->get_results( $query, ARRAY_A );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query values are prepared above; table names come from the trusted WordPress prefix.
+		$rows = $wpdb->get_results( $query, ARRAY_A );
 
 		if ( $wpdb->last_error ) {
 			return new WP_Error( 'bono_arm_api_database_error', __( 'Unable to load ARMember payment records.', 'bono-arm-api' ), array( 'status' => 500 ) );
@@ -161,6 +167,7 @@ final class Payment_Repository {
 		$tables = $this->tables();
 		$where  = $this->where_sql( $minimum_invoice_id, $plan_id );
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Conditions are prepared; table names come from the trusted WordPress prefix.
 		return (int) $wpdb->get_var(
 			"SELECT COUNT(*)
 			FROM {$tables['payment_log']} AS a
