@@ -39,7 +39,7 @@ final class V1_Controller extends WP_REST_Controller {
 
 		register_rest_route(
 			$this->namespace,
-			'/members/(?P<user_id>\d+)/activate',
+			'/members/(?P<user_id>[\d]+)/activate',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'activate' ),
@@ -52,7 +52,7 @@ final class V1_Controller extends WP_REST_Controller {
 
 		register_rest_route(
 			$this->namespace,
-			'/members/(?P<user_id>\d+)/delete',
+			'/members/(?P<user_id>[\d]+)/delete',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'delete' ),
