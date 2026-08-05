@@ -2,7 +2,7 @@
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -98,6 +98,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.0.1 =
+Updates the WordPress Coding Standards development dependency to resolve CVE-2026-45293.
+
 = 2.0.0 =
 Adds the schema-first v2 API, least-privilege capabilities, WordPress 7 integration, and a fully verified release-quality workflow while preserving all v1 routes.
 
@@ -130,6 +133,10 @@ The API responds with `status: 0` and a message indicating the missing parameter
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 2.0.1 =
+* Updated WordPress Coding Standards to 3.4.1 and refreshed its compatible development dependencies.
+* Resolved CVE-2026-45293 in the Composer development dependency lockfile.
 
 = 2.0.0 =
 * Added a schema-first v2 API with cursor pagination, field contexts, standard errors, and HTTP DELETE semantics.
