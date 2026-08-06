@@ -2,35 +2,435 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Bono API for ARMember v2",
-    "version": "2.0.1"
+    "version": "2.0.2",
+    "description": "Schema-first ARMember endpoints. Payment items follow the registered REST item schema, discoverable via OPTIONS on the payments route. Errors use the standard WordPress REST error shape."
   },
+  "servers": [
+    {
+      "url": "{siteUrl}/wp-json",
+      "description": "WordPress REST root",
+      "variables": {
+        "siteUrl": {
+          "default": "https://example.com"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
   "paths": {
-    "/wp-json/bono_armember/v2/payments": {
+    "/bono_armember/v2/payments": {
       "get": {
         "summary": "List successful payments using cursor pagination",
+        "description": "Returns an envelope with the payment page and cursor metadata. payer_email and notes are present only when context=edit.",
         "parameters": [
-          {"name": "after_invoice_id", "in": "query", "schema": {"type": "integer", "minimum": 0, "default": 0}},
-          {"name": "plan_id", "in": "query", "schema": {"type": "integer", "minimum": 1}},
-          {"name": "per_page", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}},
-          {"name": "context", "in": "query", "schema": {"type": "string", "enum": ["view", "edit"], "default": "view"}},
-          {"name": "include_totals", "in": "query", "schema": {"type": "boolean", "default": false}}
+          {
+            "name": "after_invoice_id",
+            "in": "query",
+            "description": "Return invoices with IDs greater than this cursor.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "plan_id",
+            "in": "query",
+            "description": "Limit results to an ARMember plan.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "context",
+            "in": "query",
+            "description": "Scope of the response. edit adds payer_email and notes.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "view",
+                "edit"
+              ],
+              "default": "view"
+            }
+          },
+          {
+            "name": "include_totals",
+            "in": "query",
+            "description": "Run the extra COUNT query and emit the X-WP-Total headers.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
         ],
-        "responses": {"200": {"description": "Payment page"}, "401": {"description": "Authentication required"}, "403": {"description": "Insufficient capability"}, "503": {"description": "Feature or ARMember unavailable"}}
+        "responses": {
+          "200": {
+            "description": "Payment page",
+            "headers": {
+              "X-WP-Total": {
+                "description": "Rows matching the filters *after* the requested cursor, not the size of the whole collection. Present only when include_totals=true.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-WP-TotalPages": {
+                "description": "ceil(X-WP-Total / per_page). Derived from the post-cursor count, so it shrinks as the client pages forward. Present only when include_totals=true.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          }
+        }
       }
     },
-    "/wp-json/bono_armember/v2/members/{user_id}/activate": {
+    "/bono_armember/v2/members/{user_id}/activate": {
       "post": {
         "summary": "Activate a member",
-        "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}}],
-        "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"send_email": {"type": "boolean", "default": false}}}}}},
-        "responses": {"200": {"description": "Member activated"}, "404": {"description": "User not found"}, "503": {"description": "Feature or ARMember unavailable"}}
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "send_email": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Send ARMember's manual-activation email when that template is configured."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member activated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivateMemberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          }
+        }
       }
     },
-    "/wp-json/bono_armember/v2/members/{user_id}": {
+    "/bono_armember/v2/members/{user_id}": {
       "delete": {
         "summary": "Delete a single-site member and reassign content",
-        "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}}, {"name": "reassign_user_id", "in": "query", "required": true, "schema": {"type": "integer", "minimum": 1}}],
-        "responses": {"200": {"description": "Member deleted"}, "403": {"description": "Forbidden or self-deletion"}, "404": {"description": "User not found"}, "501": {"description": "Multisite unsupported"}}
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "reassign_user_id",
+            "in": "query",
+            "required": true,
+            "description": "Existing user who inherits the deleted member's content. Must differ from user_id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteMemberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "500": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "501": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Use a WordPress administrator username and Application Password."
+      }
+    },
+    "schemas": {
+      "Payment": {
+        "type": "object",
+        "description": "Mirrors the registered REST item schema (bono-arm-payment). payer_email and notes are edit-context only.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "invoice_id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "username": {
+            "type": "string",
+            "readOnly": true
+          },
+          "payer_email": {
+            "type": "string",
+            "format": "email",
+            "readOnly": true,
+            "description": "Only present when context=edit."
+          },
+          "paid_amount": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Currency and amount, joined with a space."
+          },
+          "payment_gateway": {
+            "type": "string",
+            "readOnly": true
+          },
+          "payment_date": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "notes": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Only present when context=edit."
+          },
+          "transaction_status": {
+            "type": "string",
+            "readOnly": true
+          }
+        }
+      },
+      "PaymentsPage": {
+        "type": "object",
+        "required": [
+          "payments",
+          "pagination",
+          "context"
+        ],
+        "properties": {
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "required": [
+              "per_page",
+              "next_cursor",
+              "has_more"
+            ],
+            "properties": {
+              "per_page": {
+                "type": "integer"
+              },
+              "next_cursor": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Pass as after_invoice_id to fetch the next page. Null when the page is empty."
+              },
+              "has_more": {
+                "type": "boolean"
+              }
+            }
+          },
+          "context": {
+            "type": "string",
+            "enum": [
+              "view",
+              "edit"
+            ]
+          }
+        }
+      },
+      "ActivateMemberResponse": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "primary_status",
+          "secondary_status",
+          "email_sent"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer"
+          },
+          "primary_status": {
+            "type": "integer"
+          },
+          "secondary_status": {
+            "type": "integer"
+          },
+          "email_sent": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeleteMemberResponse": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "user_login",
+          "reassigned_to_user_id",
+          "cleanup_mode"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer"
+          },
+          "user_login": {
+            "type": "string"
+          },
+          "reassigned_to_user_id": {
+            "type": "integer"
+          },
+          "cleanup_mode": {
+            "type": "string",
+            "enum": [
+              "automatic_hooks",
+              "manual_fallback"
+            ]
+          }
+        }
+      },
+      "RestError": {
+        "type": "object",
+        "description": "Standard WordPress REST error shape.",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "examples": [
+              "bono_arm_api_feature_disabled",
+              "bono_arm_api_self_delete",
+              "rest_forbidden"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "RestError": {
+        "description": "WordPress REST error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RestError"
+            }
+          }
+        }
       }
     }
   }
