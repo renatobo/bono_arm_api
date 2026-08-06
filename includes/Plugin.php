@@ -29,6 +29,7 @@ final class Plugin {
 		$this->repository = new Payment_Repository();
 		$this->gateway    = new Gateway( $this->repository );
 
+		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( 'BonoArmApi\\Capabilities', 'maybe_upgrade' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'wp_abilities_api_categories_init', array( 'BonoArmApi\\Abilities', 'register_category' ) );
@@ -39,6 +40,14 @@ final class Plugin {
 		if ( is_admin() ) {
 			( new Settings_Page( $this->repository ) )->register();
 		}
+	}
+
+	public function load_textdomain() {
+		load_plugin_textdomain(
+			'bono-arm-api',
+			false,
+			dirname( plugin_basename( BONO_ARM_API_FILE ) ) . '/languages'
+		);
 	}
 
 	public function register_rest_routes() {
