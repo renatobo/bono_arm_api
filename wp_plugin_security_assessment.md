@@ -31,7 +31,7 @@ No findings.
 
 - Status: **Resolved**.
 - Original impact: plugin metadata admitted WordPress versions that predate core Application Passwords, which the documentation presents as the normal authentication setup.
-- Resolution: the minimum supported version is now WordPress 6.8 in `bono-arm-api.php`, `readme.txt`, `README.md`, `phpcs.xml.dist`, and `docs/wordpress-7-compatibility.md`. The floor is set by `wp_unique_id()` in the settings screen and comfortably exceeds the 5.6 Application Passwords requirement.
+- Resolution: the minimum supported version is now WordPress 6.9 in `bono-arm-api.php`, `readme.txt`, `README.md`, `phpcs.xml.dist`, and `docs/wordpress-7-compatibility.md`. The floor is set by `wp_unique_id()` (6.8) in the settings screen and the Abilities API registration (6.9), and comfortably exceeds the 5.6 Application Passwords requirement.
 
 ## Completed Remediations
 
@@ -67,4 +67,4 @@ No findings.
 - `context=edit` on the v2 payments endpoint exposes payer email and notes to any holder of `bono_arm_api_read_payments`. This is intentional and documented on the settings screen, but sites delegating that capability broadly should treat it as PII access.
 - The plugin has not been executed in a full WordPress + ARMember environment, so capability mapping, activation email behavior, ARMember cleanup hooks, SQL query plans, and `WP_DEBUG` runtime notices require integration verification.
 - Offset pagination remains in v1 for backward compatibility. It is bounded, but production-like `EXPLAIN` checks are still recommended for high-volume ARMember tables.
-- CI integration tests run WordPress 6.9 and 7.0.2; the declared 6.8 floor is not exercised directly.
+- CI integration tests run WordPress 6.9 and 7.0.2, which now match the declared floor.

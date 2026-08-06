@@ -35,9 +35,10 @@ official Plugin Check).
   `Payment_Repository::where_sql()` returns an already-prepared fragment that an outer
   `prepare()` re-parses. Safe only because it substitutes integers. Adding a string
   parameter there requires restructuring to prepare once.
-- **WP floor is 6.8**, set by `wp_unique_id()` in the settings page. CI no longer
-  suppresses `wp_function_not_compatible_with_requires_wp`, so newer core APIs must be
-  `function_exists()`-guarded or the floor must move.
+- **WP floor is 6.9**, set by the Abilities API registration; `wp_unique_id()` in the
+  settings page needs 6.8. CI no longer suppresses
+  `wp_function_not_compatible_with_requires_wp`, and Plugin Check does not reason about
+  `function_exists()` guards, so any newer core API forces the floor up.
 - **Packaged folder is `bono-arm-api/`, repo dir is `bono_arm_api`.** The zip name uses
   the repo dir; the internal folder must match the text domain.
 - **The settings page is under Settings**, so core's `options-head.php` already calls

@@ -1,7 +1,7 @@
 === Bono API for ARMember ===
 Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
-Requires at least: 6.8
+Requires at least: 6.9
 Tested up to: 7.0
 Stable tag: 2.0.2
 Requires PHP: 7.4
@@ -100,7 +100,7 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 == Upgrade Notice ==
 
 = 2.0.2 =
-Raises the minimum WordPress version to 6.8, removes plugin capabilities on deactivation, cleans up every site on multisite uninstall, and ships translation support. The packaged plugin folder is now `bono-arm-api`.
+Raises the minimum WordPress version to 6.9, removes plugin capabilities on deactivation, cleans up every site on multisite uninstall, and ships translation support. The packaged plugin folder is now `bono-arm-api`.
 
 = 2.0.1 =
 Updates the WordPress Coding Standards development dependency to resolve CVE-2026-45293.
@@ -139,7 +139,7 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 == Changelog ==
 
 = 2.0.2 =
-* Raised the minimum supported WordPress version to 6.8, which the settings screen already required.
+* Raised the minimum supported WordPress version to 6.9, the floor required by the Abilities API and the settings screen.
 * Removed the plugin capabilities on deactivation instead of leaving them on the administrator role until uninstall.
 * Extended uninstall cleanup to every site on multisite installs.
 * Added a translation template and registered the plugin language directory so translations load on GitHub installs.
