@@ -7,6 +7,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Read-only access to ARMember's payment and member tables.
+ *
+ * Caching policy: schema probes are cached in a transient, because they answer the same
+ * question on every request and a transient survives without a persistent object cache.
+ * Payment reads are deliberately not cached. Each REST request issues its query once and
+ * returns, so a request-scoped wp_cache_* entry would never be read back on a default
+ * install; where a persistent backend does exist, caching would serve stale rows to the
+ * integrations that poll this API by invoice cursor precisely to pick up new records.
+ * ARMember writes these tables outside this plugin, so there is no invalidation point.
+ *
+ * Statement preparation: table names are passed as %i identifier placeholders and
+ * where_clause() returns unresolved %d placeholders with their values, so every statement
+ * is prepared exactly once. Do not reintroduce a pre-prepared SQL fragment.
+ */
 final class Payment_Repository {
 	public function tables() {
 		global $wpdb;
@@ -28,6 +43,7 @@ final class Payment_Repository {
 		}
 
 		foreach ( $this->tables() as $table_name ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema probe with no core API; the result is cached in a transient for BONO_ARM_API_TABLE_CHECK_TTL below.
 			$existing = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table_name ) ) );
 
 			if ( $existing !== $table_name ) {
@@ -48,10 +64,20 @@ final class Payment_Repository {
 		}
 
 		$tables = $this->tables();
-		$where  = $this->where_sql( $minimum_invoice_id, $plan_id );
 		$offset = ( $page - 1 ) * $per_page;
 		$manual = '%' . $wpdb->esc_like( 'manual_by' ) . '%';
-		$query  = $wpdb->prepare(
+
+		list( $where, $where_args ) = $this->where_clause( $minimum_invoice_id, $plan_id );
+
+		$args = array_merge(
+			array( $manual, $tables['payment_log'], $tables['members'], $tables['payment_log'], $tables['members'] ),
+			$where_args,
+			$where_args,
+			array( $per_page, $offset )
+		);
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API, and these reads stay uncached on purpose: each REST request runs the query once, so wp_cache_* would never be read back on the sites that lack a persistent object cache, and on the sites that have one it would hand stale rows to cursor-based sync clients. See the class docblock.
+		$query = $wpdb->prepare(
 			"SELECT
 				a.arm_user_id AS id,
 				a.arm_invoice_id AS arm_log_id,
@@ -65,23 +91,21 @@ final class Payment_Repository {
 					'') AS notes,
 				a.arm_transaction_status,
 				totals.total_count AS bono_total_count
-			FROM {$tables['payment_log']} AS a
-			INNER JOIN {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
+			FROM %i AS a
+			INNER JOIN %i AS b ON a.arm_user_id = b.arm_user_id
 			CROSS JOIN (
 				SELECT COUNT(*) AS total_count
-				FROM {$tables['payment_log']} AS a
-				INNER JOIN {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
+				FROM %i AS a
+				INNER JOIN %i AS b ON a.arm_user_id = b.arm_user_id
 				{$where}
 			) AS totals
 			{$where}
 			ORDER BY a.arm_invoice_id DESC
 			LIMIT %d OFFSET %d",
-			$manual,
-			$per_page,
-			$offset
+			$args
 		);
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query values are prepared above; table names come from the trusted WordPress prefix.
-		$rows = $wpdb->get_results( $query, ARRAY_A );
+		$rows  = $wpdb->get_results( $query, ARRAY_A );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		if ( $wpdb->last_error ) {
 			return new WP_Error( 'bono_arm_api_database_error', __( 'Unable to load ARMember payment records.', 'bono-arm-api' ), array( 'status' => 500 ) );
@@ -114,10 +138,19 @@ final class Payment_Repository {
 		}
 
 		$tables = $this->tables();
-		$where  = $this->where_sql( $after_invoice_id, $plan_id );
 		$limit  = $per_page + 1;
 		$manual = '%' . $wpdb->esc_like( 'manual_by' ) . '%';
-		$query  = $wpdb->prepare(
+
+		list( $where, $where_args ) = $this->where_clause( $after_invoice_id, $plan_id );
+
+		$args = array_merge(
+			array( $manual, $tables['payment_log'], $tables['members'] ),
+			$where_args,
+			array( $limit )
+		);
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API, and these reads stay uncached on purpose: each REST request runs the query once, so wp_cache_* would never be read back on the sites that lack a persistent object cache, and on the sites that have one it would hand stale rows to cursor-based sync clients. See the class docblock.
+		$query = $wpdb->prepare(
 			"SELECT
 				a.arm_user_id AS id,
 				a.arm_invoice_id AS arm_log_id,
@@ -130,16 +163,15 @@ final class Payment_Repository {
 					SUBSTRING_INDEX(SUBSTRING_INDEX(a.arm_extra_vars, 's:13:\"', -1), '\";}', 1),
 					'') AS notes,
 				a.arm_transaction_status
-			FROM {$tables['payment_log']} AS a
-			INNER JOIN {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
+			FROM %i AS a
+			INNER JOIN %i AS b ON a.arm_user_id = b.arm_user_id
 			{$where}
 			ORDER BY a.arm_invoice_id ASC
 			LIMIT %d",
-			$manual,
-			$limit
+			$args
 		);
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query values are prepared above; table names come from the trusted WordPress prefix.
-		$rows = $wpdb->get_results( $query, ARRAY_A );
+		$rows  = $wpdb->get_results( $query, ARRAY_A );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		if ( $wpdb->last_error ) {
 			return new WP_Error( 'bono_arm_api_database_error', __( 'Unable to load ARMember payment records.', 'bono-arm-api' ), array( 'status' => 500 ) );
@@ -165,30 +197,40 @@ final class Payment_Repository {
 		global $wpdb;
 
 		$tables = $this->tables();
-		$where  = $this->where_sql( $minimum_invoice_id, $plan_id );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Conditions are prepared; table names come from the trusted WordPress prefix.
-		return (int) $wpdb->get_var(
+		list( $where, $where_args ) = $this->where_clause( $minimum_invoice_id, $plan_id );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API, and these reads stay uncached on purpose: each REST request runs the query once, so wp_cache_* would never be read back on the sites that lack a persistent object cache, and on the sites that have one it would hand stale rows to cursor-based sync clients. See the class docblock.
+		$query = $wpdb->prepare(
 			"SELECT COUNT(*)
-			FROM {$tables['payment_log']} AS a
-			INNER JOIN {$tables['members']} AS b ON a.arm_user_id = b.arm_user_id
-			{$where}"
+			FROM %i AS a
+			INNER JOIN %i AS b ON a.arm_user_id = b.arm_user_id
+			{$where}",
+			array_merge( array( $tables['payment_log'], $tables['members'] ), $where_args )
 		);
+
+		return (int) $wpdb->get_var( $query );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 
-	private function where_sql( $minimum_invoice_id, $plan_id ) {
-		global $wpdb;
-
-		$where = $wpdb->prepare(
-			"WHERE a.arm_transaction_status = 'success' AND a.arm_invoice_id > %d",
-			$minimum_invoice_id
-		);
+	/**
+	 * Returns the shared WHERE clause with unresolved placeholders plus its values.
+	 *
+	 * The clause is deliberately *not* prepared here: callers merge $args into their own
+	 * single prepare() call, so the fragment is never processed twice.
+	 *
+	 * @return array{0:string,1:array}
+	 */
+	private function where_clause( $minimum_invoice_id, $plan_id ) {
+		$where = "WHERE a.arm_transaction_status = 'success' AND a.arm_invoice_id > %d";
+		$args  = array( $minimum_invoice_id );
 
 		if ( $plan_id ) {
-			$where .= $wpdb->prepare( ' AND a.arm_plan_id = %d', $plan_id );
+			$where .= ' AND a.arm_plan_id = %d';
+			$args[] = $plan_id;
 		}
 
-		return $where;
+		return array( $where, $args );
 	}
 
 	public function normalize_row( $row ) {

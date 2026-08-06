@@ -1,6 +1,6 @@
 # Bono API for ARMember
 
-[![WordPress](https://img.shields.io/badge/WordPress-5.6%2B-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
+[![WordPress](https://img.shields.io/badge/WordPress-6.9%2B-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![Tested up to](https://img.shields.io/badge/Tested%20up%20to-7.0-21759B?logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![Release](https://img.shields.io/github/v/release/renatobo/bono_arm_api?label=release)](https://github.com/renatobo/bono_arm_api/releases)
 [![License: GPL v2 or later](https://img.shields.io/badge/License-GPL%20v2%20or%20later-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
@@ -42,7 +42,7 @@ curl -u your_username:your_app_password \
 
 ## Requirements
 
-- WordPress `5.6+` (tested through WordPress `7.0`)
+- WordPress `6.9+` (tested through WordPress `7.0`)
 - PHP `7.4+`
 - ARMember plugin installed and active
 - HTTPS-enabled site (recommended for secure API auth)

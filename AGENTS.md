@@ -46,6 +46,7 @@ Guidance for coding agents and contributors working in this repository.
 - The `quality.yml` workflow is the release gate; keep its WordPress/PHP matrix and immutable action pins current.
 - `release.sh` is the only supported tag-creation path. Do not add an automatic stable-tag workflow.
 - `release.sh` supports both an in-script version bump and version metadata already committed through a release pull request.
-- Release zip expects plugin files at repo root, including `*.php`, `readme.txt`, and `LICENSE`.
+- Release zip expects plugin files at repo root, including `*.php`, `readme.txt`, `LICENSE`, and `languages/`.
+- Regenerate the translation template with `wp i18n make-pot . languages/bono-arm-api.pot` whenever translatable strings change.
 - Checked-in API specs live under `docs/` and should stay aligned with the plugin routes.
 - GitHub Releases must publish the matching checked-in notes file from `release-notes/<version>.md`.

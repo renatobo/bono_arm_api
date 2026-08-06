@@ -113,7 +113,16 @@ final class V1_Controller extends WP_REST_Controller {
 
 	public function can_delete( WP_REST_Request $request ) {
 		$user_id = absint( $request['user_id'] );
-		return $user_id && current_user_can( BONO_ARM_API_CAP_DELETE_MEMBERS ) && current_user_can( 'delete_user', $user_id );
+
+		if ( ! $user_id || ! current_user_can( BONO_ARM_API_CAP_DELETE_MEMBERS ) || ! current_user_can( 'delete_user', $user_id ) ) {
+			return false;
+		}
+
+		if ( get_current_user_id() === $user_id ) {
+			return new WP_Error( 'bono_arm_api_self_delete', __( 'You cannot delete the account used to authenticate this request.', 'bono-arm-api' ), array( 'status' => 403 ) );
+		}
+
+		return true;
 	}
 
 	private function payment_args() {

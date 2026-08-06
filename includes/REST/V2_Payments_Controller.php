@@ -27,10 +27,13 @@ final class V2_Payments_Controller extends WP_REST_Controller {
 			$this->namespace,
 			'/' . $this->rest_base,
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
-				'args'                => $this->get_collection_params(),
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_items' ),
+					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'args'                => $this->get_collection_params(),
+				),
+				'schema' => array( $this, 'get_public_item_schema' ),
 			)
 		);
 	}
@@ -90,16 +93,18 @@ final class V2_Payments_Controller extends WP_REST_Controller {
 			'id'                 => (int) $item['id'],
 			'invoice_id'         => (int) $item['arm_log_id'],
 			'username'           => $item['username'],
+			'payer_email'        => $item['arm_payer_email'],
 			'paid_amount'        => $item['arm_paid_amount'],
 			'payment_gateway'    => $item['arm_payment_gateway'],
 			'payment_date'       => $item['arm_payment_date'],
+			'notes'              => $item['notes'],
 			'transaction_status' => $item['arm_transaction_status'],
 		);
 
-		if ( 'edit' === $request['context'] ) {
-			$data['payer_email'] = $item['arm_payer_email'];
-			$data['notes']       = $item['notes'];
-		}
+		$data = $this->add_additional_fields_to_object( $data, $request );
+
+		// Schema context markers decide which fields survive; payer_email and notes are edit-only.
+		$data = $this->filter_response_by_context( $data, $request['context'] );
 
 		return rest_ensure_response( $data );
 	}
@@ -127,11 +132,7 @@ final class V2_Payments_Controller extends WP_REST_Controller {
 				'default'           => 50,
 				'sanitize_callback' => 'absint',
 			),
-			'context'          => array(
-				'type'    => 'string',
-				'enum'    => array( 'view', 'edit' ),
-				'default' => 'view',
-			),
+			'context'          => $this->get_context_param( array( 'default' => 'view' ) ),
 			'include_totals'   => array(
 				'type'              => 'boolean',
 				'default'           => false,
@@ -142,7 +143,7 @@ final class V2_Payments_Controller extends WP_REST_Controller {
 
 	public function get_item_schema() {
 		if ( $this->schema ) {
-			return $this->schema;
+			return $this->add_additional_fields_schema( $this->schema );
 		}
 
 		$this->schema = array(
@@ -200,6 +201,6 @@ final class V2_Payments_Controller extends WP_REST_Controller {
 			),
 		);
 
-		return $this->schema;
+		return $this->add_additional_fields_schema( $this->schema );
 	}
 }

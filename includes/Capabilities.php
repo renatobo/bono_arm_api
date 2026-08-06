@@ -23,6 +23,11 @@ final class Capabilities {
 		update_option( BONO_ARM_API_OPTION_SCHEMA_VERSION, BONO_ARM_API_VERSION, false );
 	}
 
+	public static function deactivate() {
+		self::remove_from_administrators();
+		delete_option( BONO_ARM_API_OPTION_SCHEMA_VERSION );
+	}
+
 	public static function maybe_upgrade() {
 		if ( BONO_ARM_API_VERSION === get_option( BONO_ARM_API_OPTION_SCHEMA_VERSION ) ) {
 			return;

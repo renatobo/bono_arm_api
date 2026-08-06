@@ -87,7 +87,6 @@ jobs:
           unzip -q bono_arm_api-*.zip -d plugin-check-build
       - uses: wordpress/plugin-check-action@98a1788320d0add90df2d8183934ecccbc4e05d2 # v1
         with:
-          build-dir: ./plugin-check-build/bono_arm_api
-          ignore-codes: wp_function_not_compatible_with_requires_wp
+          build-dir: ./plugin-check-build/bono-arm-api
           slug: bono-arm-api
           wp-version: '7.0.2'
