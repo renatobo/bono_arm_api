@@ -136,6 +136,8 @@ final class Settings_Page {
 					<thead><tr><th><?php esc_html_e( 'API', 'bono-arm-api' ); ?></th><th><?php esc_html_e( 'Route', 'bono-arm-api' ); ?></th><th><?php esc_html_e( 'Capability', 'bono-arm-api' ); ?></th></tr></thead>
 					<tbody>
 						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/arm_payments_log', Capabilities::READ_PAYMENTS ); ?>
+						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/members/{user_id}/activate', Capabilities::ACTIVATE_MEMBERS ); ?>
+						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/members/{user_id}/delete', Capabilities::DELETE_MEMBERS ); ?>
 						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/payments', Capabilities::READ_PAYMENTS ); ?>
 						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}/activate', Capabilities::ACTIVATE_MEMBERS ); ?>
 						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}', Capabilities::DELETE_MEMBERS ); ?>
@@ -153,7 +155,11 @@ final class Settings_Page {
 		?>
 		<tr>
 			<td><?php echo esc_html( $version ); ?></td>
-			<td><code id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $route ); ?></code> <button type="button" class="button button-small bono-arm-api-copy" data-copy-target="<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Copy', 'bono-arm-api' ); ?></button></td>
+			<td>
+				<code id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $route ); ?></code>
+				<?php // aria-describedby appends the route to the button's announcement, so the identically labelled Copy buttons are distinguishable. ?>
+				<button type="button" class="button button-small bono-arm-api-copy" data-copy-target="<?php echo esc_attr( $id ); ?>" aria-describedby="<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Copy', 'bono-arm-api' ); ?></button>
+			</td>
 			<td><code><?php echo esc_html( $capability ); ?></code></td>
 		</tr>
 		<?php

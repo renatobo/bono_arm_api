@@ -143,11 +143,11 @@ msgstr ""
 msgid "Capability"
 msgstr ""
 
-#: includes/Admin/Settings_Page.php:145
+#: includes/Admin/Settings_Page.php:147
 msgid "Administrator roles receive these capabilities on activation. Delegate individual capabilities only to trusted API users. The v2 payment endpoint hides payer email and notes in view context."
 msgstr ""
 
-#: includes/Admin/Settings_Page.php:156
+#: includes/Admin/Settings_Page.php:161
 msgid "Copy"
 msgstr ""
 
