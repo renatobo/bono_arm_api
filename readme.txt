@@ -1,8 +1,9 @@
 === Bono API for ARMember ===
+Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
-Requires at least: 5.6
+Requires at least: 6.8
 Tested up to: 7.0
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -98,6 +99,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.0.2 =
+Raises the minimum WordPress version to 6.8, removes plugin capabilities on deactivation, cleans up every site on multisite uninstall, and ships translation support. The packaged plugin folder is now `bono-arm-api`.
+
 = 2.0.1 =
 Updates the WordPress Coding Standards development dependency to resolve CVE-2026-45293.
 
@@ -113,7 +117,7 @@ Clarifies GitHub-first distribution with Git Updater metadata and aligns admin a
 == Frequently Asked Questions ==
 
 = Who can access the endpoint? =
-Administrators receive `bono_arm_api_read_payments`, `bono_arm_api_activate_members`, and `bono_arm_api_delete_members` on activation. Integrations can be granted only the capabilities they require. Member deletion also requires WordPress permission to delete the target user.
+Administrators receive `bono_arm_api_read_payments`, `bono_arm_api_activate_members`, and `bono_arm_api_delete_members` on activation, and the plugin removes them again on deactivation. Integrations can be granted only the capabilities they require. Member deletion also requires WordPress permission to delete the target user.
 
 = How can I disable the endpoint? =
 Go to Settings -> Bono ARM API and uncheck the endpoint toggle you want to disable.
@@ -133,6 +137,16 @@ The API responds with `status: 0` and a message indicating the missing parameter
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 2.0.2 =
+* Raised the minimum supported WordPress version to 6.8, which the settings screen already required.
+* Removed the plugin capabilities on deactivation instead of leaving them on the administrator role until uninstall.
+* Extended uninstall cleanup to every site on multisite installs.
+* Added a translation template and registered the plugin language directory so translations load on GitHub installs.
+* Renamed the packaged plugin folder to `bono-arm-api` so it matches the text domain.
+* Rejected self-deletion in the v1 delete permission callback instead of relying on the reassignment check.
+* Registered the v2 payment item schema so the route is introspectable, and expanded the v2 OpenAPI specification.
+* Corrected duplicated settings notices and the ARMember availability notice severity on the settings screen.
 
 = 2.0.1 =
 * Updated WordPress Coding Standards to 3.4.1 and refreshed its compatible development dependencies.
