@@ -43,6 +43,14 @@ final class Plugin {
 	}
 
 	public function load_textdomain() {
+		/*
+		 * Plugin Check flags this call as discouraged because WordPress.org installs receive
+		 * language packs automatically. GitHub releases installed through Git Updater do not,
+		 * and just-in-time loading only scans WP_LANG_DIR, so the bundled languages/ directory
+		 * would never be read without registering it here. Language packs still win when a
+		 * WordPress.org listing exists.
+		 */
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Required for the GitHub/Git Updater distribution channel; see above.
 		load_plugin_textdomain(
 			'bono-arm-api',
 			false,

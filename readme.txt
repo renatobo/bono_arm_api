@@ -147,6 +147,8 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 * Rejected self-deletion in the v1 delete permission callback instead of relying on the reassignment check.
 * Registered the v2 payment item schema so the route is introspectable, and expanded the v2 OpenAPI specification.
 * Corrected duplicated settings notices and the ARMember availability notice severity on the settings screen.
+* Listed every registered route on the settings screen and labelled the endpoint copy buttons for assistive technology.
+* Hardened the ARMember payment queries with identifier placeholders and single-pass statement preparation.
 
 = 2.0.1 =
 * Updated WordPress Coding Standards to 3.4.1 and refreshed its compatible development dependencies.

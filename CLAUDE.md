@@ -31,10 +31,11 @@ official Plugin Check).
 ## Gotchas
 
 - **Read phpcs output in full.** `--report=summary | tail -N` hides the findings table.
-- **`phpcs.xml.dist` excludes the `WordPress.DB.PreparedSQL*` sniffs.** SQL is unlinted.
-  `Payment_Repository::where_sql()` returns an already-prepared fragment that an outer
-  `prepare()` re-parses. Safe only because it substitutes integers. Adding a string
-  parameter there requires restructuring to prepare once.
+- **SQL is linted; keep it that way.** `phpcs.xml.dist` no longer excludes the
+  `WordPress.DB.*` sniffs. `Payment_Repository` suppresses them in narrow
+  `phpcs:disable`/`enable` blocks with justifications. Table names use `%i` identifier
+  placeholders and `where_clause()` returns unresolved `%d` placeholders plus their values,
+  so every statement is prepared exactly once. Do not reintroduce a pre-prepared fragment.
 - **WP floor is 6.9**, set by the Abilities API registration; `wp_unique_id()` in the
   settings page needs 6.8. CI no longer suppresses
   `wp_function_not_compatible_with_requires_wp`, and Plugin Check does not reason about

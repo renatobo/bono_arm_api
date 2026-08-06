@@ -151,17 +151,17 @@ msgstr ""
 msgid "Copy"
 msgstr ""
 
-#: includes/Infrastructure/Payment_Repository.php:47
-#: includes/Infrastructure/Payment_Repository.php:113
+#: includes/Infrastructure/Payment_Repository.php:48
+#: includes/Infrastructure/Payment_Repository.php:122
 msgid "ARMember payment tables are not available."
 msgstr ""
 
-#: includes/Infrastructure/Payment_Repository.php:87
-#: includes/Infrastructure/Payment_Repository.php:145
+#: includes/Infrastructure/Payment_Repository.php:96
+#: includes/Infrastructure/Payment_Repository.php:162
 msgid "Unable to load ARMember payment records."
 msgstr ""
 
-#: includes/Plugin.php:69
+#: includes/Plugin.php:77
 msgid "Settings"
 msgstr ""
 

@@ -43,6 +43,7 @@ No findings.
 - Endpoint-controlled errors return meaningful HTTP 4xx/5xx status codes while v1 retains the plugin's legacy JSON envelope.
 - ARMember table availability is cached for five minutes, avoiding repeated schema probes on each API call.
 - The common payments path combines total-count and page retrieval into one query; empty deep pages retain an explicit count fallback. v2 uses keyset pagination and computes totals only when `include_totals` is requested.
+- Every payment query is prepared exactly once. Table names use `%i` identifier placeholders and the shared WHERE clause returns unresolved `%d` placeholders with their values, replacing the previous pre-prepared fragment that an outer `prepare()` re-processed.
 - Capabilities are granted on activation, removed on deactivation, and removed again on uninstall.
 - Uninstall removes all feature-toggle options, the schema-version option, the table-availability transient, and the granted capabilities, iterating every site on multisite installs.
 - Admin CSS and JavaScript are versioned external assets enqueued only on the plugin settings screen; inline event handlers were removed.
@@ -55,7 +56,7 @@ No findings.
 - Feature toggles gate each endpoint independently and fail closed when unset.
 - Settings use `register_setting()` sanitization and the standard `options.php` nonce flow.
 - No unauthenticated AJAX or REST mutation path was found.
-- Request-controlled SQL values use `$wpdb->prepare()`, table names derive from `$wpdb->prefix`, and pagination is bounded.
+- Request-controlled SQL values use `$wpdb->prepare()`, table names derive from `$wpdb->prefix` and are escaped as `%i` identifiers, and pagination is bounded. The `WordPress.DB.*` sniffs are enabled project-wide, with narrow justified suppressions only at the ARMember query sites.
 - Admin output uses context-appropriate escaping, and external links use `noopener noreferrer`.
 - Member deletion uses WordPress's `wp_delete_user()` and preserves ARMember pre/post-delete cleanup behavior.
 - The single registered ability is read-only, capability-gated, and excluded from REST; destructive member actions are never exposed as abilities.
