@@ -7,6 +7,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Read-only access to ARMember's payment and member tables.
+ *
+ * Caching policy: schema probes are cached in a transient, because they answer the same
+ * question on every request and a transient survives without a persistent object cache.
+ * Payment reads are deliberately not cached. Each REST request issues its query once and
+ * returns, so a request-scoped wp_cache_* entry would never be read back on a default
+ * install; where a persistent backend does exist, caching would serve stale rows to the
+ * integrations that poll this API by invoice cursor precisely to pick up new records.
+ * ARMember writes these tables outside this plugin, so there is no invalidation point.
+ *
+ * Statement preparation: table names are passed as %i identifier placeholders and
+ * where_clause() returns unresolved %d placeholders with their values, so every statement
+ * is prepared exactly once. Do not reintroduce a pre-prepared SQL fragment.
+ */
 final class Payment_Repository {
 	public function tables() {
 		global $wpdb;
@@ -61,7 +76,7 @@ final class Payment_Repository {
 			array( $per_page, $offset )
 		);
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API and these reporting reads are intentionally live.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API, and these reads stay uncached on purpose: each REST request runs the query once, so wp_cache_* would never be read back on the sites that lack a persistent object cache, and on the sites that have one it would hand stale rows to cursor-based sync clients. See the class docblock.
 		$query = $wpdb->prepare(
 			"SELECT
 				a.arm_user_id AS id,
@@ -134,7 +149,7 @@ final class Payment_Repository {
 			array( $limit )
 		);
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API and these reporting reads are intentionally live.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API, and these reads stay uncached on purpose: each REST request runs the query once, so wp_cache_* would never be read back on the sites that lack a persistent object cache, and on the sites that have one it would hand stale rows to cursor-based sync clients. See the class docblock.
 		$query = $wpdb->prepare(
 			"SELECT
 				a.arm_user_id AS id,
@@ -185,7 +200,7 @@ final class Payment_Repository {
 
 		list( $where, $where_args ) = $this->where_clause( $minimum_invoice_id, $plan_id );
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API and these reporting reads are intentionally live.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $where holds only %d placeholders and its values travel in $args, so the statement is prepared exactly once; table names use %i identifier placeholders; ARMember exposes no core API, and these reads stay uncached on purpose: each REST request runs the query once, so wp_cache_* would never be read back on the sites that lack a persistent object cache, and on the sites that have one it would hand stale rows to cursor-based sync clients. See the class docblock.
 		$query = $wpdb->prepare(
 			"SELECT COUNT(*)
 			FROM %i AS a
