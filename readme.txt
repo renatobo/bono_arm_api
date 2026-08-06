@@ -3,7 +3,7 @@ Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 6.9
 Tested up to: 7.0
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -99,6 +99,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.0.3 =
+Stops uninstall from deleting shared settings and capabilities when a second copy of the plugin is still active. Install this before removing a duplicate copy left behind by the 2.0.2 folder rename.
+
 = 2.0.2 =
 Raises the minimum WordPress version to 6.9, removes plugin capabilities on deactivation, cleans up every site on multisite uninstall, and ships translation support. The packaged plugin folder is now `bono-arm-api`.
 
@@ -138,12 +141,16 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 
 == Changelog ==
 
+= 2.0.3 =
+* Uninstall now leaves stored data alone when another copy of the plugin is still installed and active, so removing a duplicate no longer wipes the live copy's feature toggles, schema version, and capabilities.
+* Corrected the 2.0.2 upgrade guidance: the packaged folder rename installs as a second plugin under Git Updater rather than updating in place.
+
 = 2.0.2 =
 * Raised the minimum supported WordPress version to 6.9, the floor required by the Abilities API and the settings screen.
 * Removed the plugin capabilities on deactivation instead of leaving them on the administrator role until uninstall.
 * Extended uninstall cleanup to every site on multisite installs.
 * Added a translation template and registered the plugin language directory so translations load on GitHub installs.
-* Renamed the packaged plugin folder to `bono-arm-api` so it matches the text domain.
+* Renamed the packaged plugin folder to `bono-arm-api` so it matches the text domain. Git Updater installs this as a second plugin rather than updating in place; see the 2.0.3 upgrade notice.
 * Rejected self-deletion in the v1 delete permission callback instead of relying on the reassignment check.
 * Registered the v2 payment item schema so the route is introspectable, and expanded the v2 OpenAPI specification.
 * Corrected duplicated settings notices and the ARMember availability notice severity on the settings screen.

@@ -4,7 +4,7 @@
     "title": "Bono ARM API REST API",
     "summary": "OpenAPI definition for the administrator-protected ARMember transaction and member-management endpoints.",
     "description": "Bono ARM API exposes administrator-only routes for reading ARMember payment transactions, activating ARMember members, and deleting members through a guarded ARMember-aware lifecycle. GitHub Releases is the primary distribution channel for this plugin, with Git Updater as the intended update mechanism for GitHub installs.",
-    "version": "2.0.2"
+    "version": "2.0.3"
   },
   "externalDocs": {
     "description": "Plugin repository",

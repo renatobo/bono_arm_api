@@ -1,6 +1,6 @@
 # WordPress Plugin Security Assessment
 
-Assessed version: 2.0.2 (post-review remediation).
+Assessed version: 2.0.3 (post-review remediation).
 
 ## Executive Summary
 
