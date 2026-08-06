@@ -4,6 +4,51 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 /**
+ * Reports whether a second copy of this plugin is still installed and active.
+ *
+ * Options, capabilities, and transients are keyed by name, not by directory, so two copies in
+ * differently named folders share the same stored data. Deleting one would otherwise take the
+ * live copy's settings and capabilities with it. WordPress loads every active plugin before it
+ * includes this file, so an active sibling has already defined the version constant; the
+ * active-plugin lists cover the case where the constant is missing.
+ */
+function bono_arm_api_sibling_copy_is_active() {
+	if ( defined( 'BONO_ARM_API_VERSION' ) ) {
+		return true;
+	}
+
+	$uninstalling = (string) WP_UNINSTALL_PLUGIN;
+	$main_file    = '/' . basename( $uninstalling );
+
+	if ( '/' === $main_file ) {
+		return false;
+	}
+
+	$active = (array) get_option( 'active_plugins', array() );
+
+	if ( is_multisite() ) {
+		$active = array_merge( $active, array_keys( (array) get_site_option( 'active_sitewide_plugins', array() ) ) );
+	}
+
+	foreach ( $active as $plugin_basename ) {
+		if ( $plugin_basename === $uninstalling ) {
+			continue;
+		}
+
+		if ( substr( $plugin_basename, -strlen( $main_file ) ) === $main_file ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+if ( bono_arm_api_sibling_copy_is_active() ) {
+	// Another copy owns the shared data. Remove only this copy's files.
+	return;
+}
+
+/**
  * Removes every option, transient, and capability the plugin created on one site.
  */
 function bono_arm_api_uninstall_site() {

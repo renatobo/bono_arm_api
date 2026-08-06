@@ -3,7 +3,7 @@
   "info": {
     "title": "Bono API for ARMember v2",
     "description": "Schema-first ARMember endpoints. Payment items follow the registered REST item schema, discoverable via OPTIONS on the payments route. Errors use the standard WordPress REST error shape.",
-    "version": "2.0.2"
+    "version": "2.0.3"
   },
   "servers": [
     {
