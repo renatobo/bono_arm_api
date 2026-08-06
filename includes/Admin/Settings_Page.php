@@ -104,17 +104,18 @@ final class Settings_Page {
 			return;
 		}
 
-		$base_url = rest_url();
+		$base_url     = rest_url();
+		$tables_exist = $this->repository->tables_exist();
 		?>
 		<div class="wrap bono-arm-api-admin">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<p class="description"><?php esc_html_e( 'Capability-controlled ARMember REST endpoints with stable v1 compatibility and a schema-first v2 API.', 'bono-arm-api' ); ?></p>
 
-			<?php settings_errors(); ?>
-			<div class="notice notice-info inline">
+			<?php // Settings errors are printed by core's options-head.php for pages under the Settings menu. ?>
+			<div class="notice inline <?php echo $tables_exist ? 'notice-success' : 'notice-warning'; ?>">
 				<p>
 					<?php
-					echo $this->repository->tables_exist()
+					echo $tables_exist
 						? esc_html__( 'ARMember payment tables are available.', 'bono-arm-api' )
 						: esc_html__( 'ARMember payment tables are not available. Payment and activation requests will return Service Unavailable.', 'bono-arm-api' );
 					?>
