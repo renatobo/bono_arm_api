@@ -100,6 +100,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.1.0 =
+Makes ARMember a required dependency. Either ARMember or ARMember Lite satisfies it. Existing installs are unaffected: the check gates activation and shows an admin notice, and never deactivates anything.
+
 = 2.0.3 =
 Stops uninstall from deleting shared settings and capabilities when a second copy of the plugin is still active. Install this before removing a duplicate copy left behind by the 2.0.2 folder rename.
 
@@ -141,6 +144,12 @@ The API responds with `status: 0` and a message indicating the missing parameter
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 2.1.0 =
+* ARMember is now a required dependency. Activation is blocked when neither ARMember nor ARMember Lite is active, so the plugin's capabilities are never granted on a site that cannot serve the API.
+* Added an admin notice for the case where ARMember is deactivated while this plugin is already active.
+* Dependency detection accepts either the premium ARMember (`armember`) or ARMember Lite (`armember-membership`), using the directory constant each defines at the top of its main plugin file.
+* The `Requires Plugins:` header is deliberately not used: it resolves WordPress.org slugs against installed plugin directories and requires every listed slug to be active, so declaring either slug would deactivate this plugin on sites running the other copy.
 
 = 2.0.3 =
 * Uninstall now leaves stored data alone when another copy of the plugin is still installed and active, so removing a duplicate no longer wipes the live copy's feature toggles, schema version, and capabilities.
