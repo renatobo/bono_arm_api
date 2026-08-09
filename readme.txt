@@ -100,6 +100,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.1.1 =
+Updates the PHP_CodeSniffer development dependency to resolve GHSA-hmqg-cxww-wqhq. No functional changes; the affected package is never shipped in the plugin zip.
+
 = 2.1.0 =
 Makes ARMember a required dependency. Either ARMember or ARMember Lite satisfies it. Existing installs are unaffected: without ARMember the plugin still activates but grants no capabilities and shows an admin notice.
 
@@ -144,6 +147,9 @@ The API responds with `status: 0` and a message indicating the missing parameter
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 2.1.1 =
+* Updated the `squizlabs/php_codesniffer` development dependency to 3.13.6 to resolve GHSA-hmqg-cxww-wqhq. The package is a development-only dependency and is excluded from the release zip, so no released build was affected.
 
 = 2.1.0 =
 * ARMember is now a required dependency. When neither ARMember nor ARMember Lite is active the plugin grants none of its capabilities, so it has no reachable API surface on a site that cannot serve one. The capabilities are granted automatically on the first admin page load after ARMember is activated.
