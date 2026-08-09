@@ -28,27 +28,13 @@ final class Dependency {
 	}
 
 	/**
-	 * Blocks activation when neither ARMember copy is active, so capabilities are never granted
-	 * on a site that cannot serve the API.
-	 */
-	public static function block_activation_when_unmet() {
-		if ( self::is_met() ) {
-			return;
-		}
-
-		wp_die(
-			esc_html__( 'Bono API for ARMember requires ARMember or ARMember Lite to be installed and active.', 'bono-arm-api' ),
-			esc_html__( 'Plugin dependency not met', 'bono-arm-api' ),
-			array(
-				'back_link' => true,
-				'response'  => 200,
-			)
-		);
-	}
-
-	/**
-	 * Covers the case the activation guard cannot: ARMember being deactivated while this plugin
-	 * is already active.
+	 * Reports the dependency to the site owner.
+	 *
+	 * Activation is deliberately not blocked. Blocking would break `wp plugin activate` for
+	 * WP-CLI, provisioning scripts, and the official Plugin Check, all of which activate a
+	 * plugin standalone. The dependency is enforced by withholding capabilities instead, which
+	 * is the property that actually matters: the endpoints already return Service Unavailable
+	 * without ARMember, so an activated-but-ungranted plugin has no reachable surface.
 	 */
 	public static function render_admin_notice() {
 		if ( self::is_met() || ! current_user_can( 'activate_plugins' ) ) {

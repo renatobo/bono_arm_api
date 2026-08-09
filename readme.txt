@@ -38,7 +38,7 @@ Features:
 - Checked-in OpenAPI 3.1 and Postman specs under `docs/`
 - Compatible with WordPress Application Password authentication
 - Returns successful transactions only
-- Requires ARMember or ARMember Lite to be active; activation is blocked otherwise
+- Requires ARMember or ARMember Lite; without it no capabilities are granted and the endpoints return Service Unavailable
 - Returns a `status: 0` dependency message if ARMember tables are unavailable
 
 Automatic updates:
@@ -101,7 +101,7 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 == Upgrade Notice ==
 
 = 2.1.0 =
-Makes ARMember a required dependency. Either ARMember or ARMember Lite satisfies it. Existing installs are unaffected: the check gates activation and shows an admin notice, and never deactivates anything.
+Makes ARMember a required dependency. Either ARMember or ARMember Lite satisfies it. Existing installs are unaffected: without ARMember the plugin still activates but grants no capabilities and shows an admin notice.
 
 = 2.0.3 =
 Stops uninstall from deleting shared settings and capabilities when a second copy of the plugin is still active. Install this before removing a duplicate copy left behind by the 2.0.2 folder rename.
@@ -146,7 +146,7 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 == Changelog ==
 
 = 2.1.0 =
-* ARMember is now a required dependency. Activation is blocked when neither ARMember nor ARMember Lite is active, so the plugin's capabilities are never granted on a site that cannot serve the API.
+* ARMember is now a required dependency. When neither ARMember nor ARMember Lite is active the plugin grants none of its capabilities, so it has no reachable API surface on a site that cannot serve one. The capabilities are granted automatically on the first admin page load after ARMember is activated.
 * Added an admin notice for the case where ARMember is deactivated while this plugin is already active.
 * Dependency detection accepts either the premium ARMember (`armember`) or ARMember Lite (`armember-membership`), using the directory constant each defines at the top of its main plugin file.
 * The `Requires Plugins:` header is deliberately not used: it resolves WordPress.org slugs against installed plugin directories and requires every listed slug to be active, so declaring either slug would deactivate this plugin on sites running the other copy.

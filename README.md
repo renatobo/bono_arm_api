@@ -47,8 +47,13 @@ curl -u your_username:your_app_password \
 - ARMember or ARMember Lite installed and active (either satisfies the requirement)
 - HTTPS-enabled site (recommended for secure API auth)
 
-ARMember is a hard dependency. Activation is blocked when neither copy is active, and an admin
-notice appears if ARMember is deactivated afterwards. The `Requires Plugins:` header is not used:
+ARMember is a required dependency. Without it the plugin still activates, but it grants none of
+its capabilities, shows an admin notice, and its endpoints return Service Unavailable. The
+capabilities are granted automatically on the first admin page load after ARMember is activated.
+Activation itself is not blocked, because that would break WP-CLI, provisioning scripts, and the
+official Plugin Check, all of which activate a plugin standalone.
+
+The `Requires Plugins:` header is not used:
 it resolves WordPress.org slugs against installed plugin directories and requires every listed
 slug to be active, so naming either `armember` or `armember-membership` would make WordPress
 deactivate this plugin on the sites running the other copy.

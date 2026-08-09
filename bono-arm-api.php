@@ -61,8 +61,11 @@ spl_autoload_register(
 register_activation_hook(
 	__FILE__,
 	static function () {
-		BonoArmApi\Dependency::block_activation_when_unmet();
-		BonoArmApi\Capabilities::activate();
+		// Capabilities are withheld until ARMember is present; Capabilities::maybe_upgrade()
+		// grants them on the first page load after it is activated.
+		if ( BonoArmApi\Dependency::is_met() ) {
+			BonoArmApi\Capabilities::activate();
+		}
 	}
 );
 register_deactivation_hook( __FILE__, array( 'BonoArmApi\\Capabilities', 'deactivate' ) );

@@ -29,6 +29,13 @@ final class Capabilities {
 	}
 
 	public static function maybe_upgrade() {
+		// Without ARMember the plugin has no reachable surface, so it gets no capabilities.
+		// This also grants them on the first load after ARMember is activated, which is the
+		// path activation cannot cover when this plugin was enabled first.
+		if ( ! Dependency::is_met() ) {
+			return;
+		}
+
 		if ( BONO_ARM_API_VERSION === get_option( BONO_ARM_API_OPTION_SCHEMA_VERSION ) ) {
 			return;
 		}
