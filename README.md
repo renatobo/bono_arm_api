@@ -44,10 +44,16 @@ curl -u your_username:your_app_password \
 
 - WordPress `6.9+` (tested through WordPress `7.0`)
 - PHP `7.4+`
-- ARMember plugin installed and active
+- ARMember or ARMember Lite installed and active (either satisfies the requirement)
 - HTTPS-enabled site (recommended for secure API auth)
 
-If ARMember is unavailable, the endpoint returns `status: 0` with a dependency message instead of querying missing tables.
+ARMember is a hard dependency. Activation is blocked when neither copy is active, and an admin
+notice appears if ARMember is deactivated afterwards. The `Requires Plugins:` header is not used:
+it resolves WordPress.org slugs against installed plugin directories and requires every listed
+slug to be active, so naming either `armember` or `armember-membership` would make WordPress
+deactivate this plugin on the sites running the other copy.
+
+If ARMember is unavailable at request time, the endpoint returns `status: 0` with a dependency message instead of querying missing tables.
 
 ## Installation
 

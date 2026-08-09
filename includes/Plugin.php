@@ -35,6 +35,7 @@ final class Plugin {
 		add_action( 'wp_abilities_api_categories_init', array( 'BonoArmApi\\Abilities', 'register_category' ) );
 		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
 		add_action( 'admin_init', array( 'BonoArmApi\\Privacy', 'register_policy_content' ) );
+		add_action( 'admin_notices', array( 'BonoArmApi\\Dependency', 'render_admin_notice' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( BONO_ARM_API_FILE ), array( $this, 'action_links' ) );
 
 		if ( is_admin() ) {

@@ -58,7 +58,13 @@ spl_autoload_register(
 	}
 );
 
-register_activation_hook( __FILE__, array( 'BonoArmApi\\Capabilities', 'activate' ) );
+register_activation_hook(
+	__FILE__,
+	static function () {
+		BonoArmApi\Dependency::block_activation_when_unmet();
+		BonoArmApi\Capabilities::activate();
+	}
+);
 register_deactivation_hook( __FILE__, array( 'BonoArmApi\\Capabilities', 'deactivate' ) );
 
 BonoArmApi\Plugin::instance()->boot();

@@ -38,6 +38,7 @@ Features:
 - Checked-in OpenAPI 3.1 and Postman specs under `docs/`
 - Compatible with WordPress Application Password authentication
 - Returns successful transactions only
+- Requires ARMember or ARMember Lite to be active; activation is blocked otherwise
 - Returns a `status: 0` dependency message if ARMember tables are unavailable
 
 Automatic updates:
