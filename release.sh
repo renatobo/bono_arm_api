@@ -227,8 +227,12 @@ git tag -a "$TAG" -m "Release $VERSION"
 git push origin main
 git push origin "$TAG"
 
+./build.sh
+
 cat <<MSG
 Release prepared for $TAG.
+
+A local zip was built into dist/ (git-ignored).
 
 GitHub Actions will now:
 - build the WordPress plugin zip with ./build.sh

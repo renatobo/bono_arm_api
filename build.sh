@@ -19,7 +19,9 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 OUTPUT_NAME="${REPO_SLUG}-${VERSION}.zip"
-OUTPUT_PATH="$PWD/$OUTPUT_NAME"
+DIST_DIR="${BONO_DIST_DIR:-$PWD/dist}"
+mkdir -p "$DIST_DIR"
+OUTPUT_PATH="$DIST_DIR/$OUTPUT_NAME"
 STAGING_DIR="$(mktemp -d)"
 PACKAGE_DIR="$STAGING_DIR/$PLUGIN_SLUG"
 
@@ -39,6 +41,8 @@ rsync -a \
   --exclude '.DS_Store' \
   --exclude '/.env' \
   --exclude '/.env.*' \
+  --exclude '/dist' \
+  --exclude '/dist/**' \
   --exclude '/output' \
   --exclude '/output/**' \
   --exclude '/temp' \
