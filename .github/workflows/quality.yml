@@ -48,9 +48,9 @@ jobs:
         include:
           - wordpress: '6.9'
             php: '7.4'
-          - wordpress: '7.0.2'
+          - wordpress: '7.1'
             php: '8.3'
-          - wordpress: '7.0.2'
+          - wordpress: '7.1'
             php: '8.5'
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -89,4 +89,4 @@ jobs:
         with:
           build-dir: ./plugin-check-build/bono-arm-api
           slug: bono-arm-api
-          wp-version: '7.0.2'
+          wp-version: '7.1'

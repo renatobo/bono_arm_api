@@ -15,7 +15,7 @@ vendor/bin/phpcbf   # auto-fix
 
 PHPUnit needs the WP test library and will fail locally without it:
 `WP_TESTS_DIR=/tmp/wordpress-tests-lib vendor/bin/phpunit`. CI is the real gate
-(`.github/workflows/quality.yml`: phpcs, PHP 7.4-8.5 lint, WP 6.9 + 7.0.2 integration,
+(`.github/workflows/quality.yml`: phpcs, PHP 7.4-8.5 lint, WP 6.9 + 7.1 integration,
 official Plugin Check). It triggers on pull requests and pushes to `main`/`wp7` only, so a
 branch push alone runs nothing: open the PR to get CI.
 

@@ -5,7 +5,7 @@ Plugin URI: https://github.com/renatobo/bono_arm_api
 Description: Capability-controlled REST API access to ARMember payment logs and member management.
 Version: 2.1.2
 Requires at least: 6.9
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
 Author: Renato Bonomini
 Author URI: https://github.com/renatobo

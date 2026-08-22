@@ -2,7 +2,7 @@
 Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 6.9
-Tested up to: 7.0
+Tested up to: 7.1
 Stable tag: 2.1.2
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -101,7 +101,7 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 == Upgrade Notice ==
 
 = 2.1.2 =
-Requires PHP_CodeSniffer 3.13.6 or newer in development environments, preventing dependency resolution to versions affected by GHSA-hmqg-cxww-wqhq. No plugin runtime changes.
+Requires PHP_CodeSniffer 3.13.6 or newer in development environments and confirms compatibility through WordPress 7.1. No plugin runtime changes.
 
 = 2.1.1 =
 Updates the PHP_CodeSniffer development dependency to resolve GHSA-hmqg-cxww-wqhq. No functional changes; the affected package is never shipped in the plugin zip.
@@ -153,6 +153,7 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 
 = 2.1.2 =
 * Raised the minimum `squizlabs/php_codesniffer` development dependency to 3.13.6 so future Composer resolutions cannot select a version affected by GHSA-hmqg-cxww-wqhq. The package remains excluded from release zips.
+* Confirmed compatibility through WordPress 7.1 and updated the release-gate integration matrix accordingly.
 
 = 2.1.1 =
 * Updated the `squizlabs/php_codesniffer` development dependency to 3.13.6 to resolve GHSA-hmqg-cxww-wqhq. The package is a development-only dependency and is excluded from the release zip, so no released build was affected.

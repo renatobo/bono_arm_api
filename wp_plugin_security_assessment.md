@@ -68,4 +68,4 @@ No findings.
 - `context=edit` on the v2 payments endpoint exposes payer email and notes to any holder of `bono_arm_api_read_payments`. This is intentional and documented on the settings screen, but sites delegating that capability broadly should treat it as PII access.
 - The plugin has not been executed in a full WordPress + ARMember environment, so capability mapping, activation email behavior, ARMember cleanup hooks, SQL query plans, and `WP_DEBUG` runtime notices require integration verification.
 - Offset pagination remains in v1 for backward compatibility. It is bounded, but production-like `EXPLAIN` checks are still recommended for high-volume ARMember tables.
-- CI integration tests run WordPress 6.9 and 7.0.2, which now match the declared floor.
+- CI integration tests run WordPress 6.9 and 7.1, covering the declared floor and current tested version.
