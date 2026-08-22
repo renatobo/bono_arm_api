@@ -84,7 +84,7 @@ jobs:
         run: |
           ./build.sh
           mkdir plugin-check-build
-          unzip -q bono_arm_api-*.zip -d plugin-check-build
+          unzip -q dist/bono_arm_api-*.zip -d plugin-check-build
       - uses: wordpress/plugin-check-action@98a1788320d0add90df2d8183934ecccbc4e05d2 # v1
         with:
           build-dir: ./plugin-check-build/bono-arm-api
