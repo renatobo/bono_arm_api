@@ -36,6 +36,7 @@ final class Plugin {
 		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
 		add_action( 'admin_init', array( 'BonoArmApi\\Privacy', 'register_policy_content' ) );
 		add_action( 'admin_notices', array( 'BonoArmApi\\Dependency', 'render_admin_notice' ) );
+		add_action( 'activated_plugin', array( $this, 'flush_schema_cache' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( BONO_ARM_API_FILE ), array( $this, 'action_links' ) );
 
 		if ( is_admin() ) {
@@ -63,6 +64,18 @@ final class Plugin {
 		( new V1_Controller( $this->repository, $this->gateway ) )->register_routes();
 		( new V2_Payments_Controller( $this->repository ) )->register_routes();
 		( new V2_Members_Controller( $this->gateway ) )->register_routes();
+	}
+
+	/**
+	 * Activating ARMember creates its tables, so a cached "not available" probe would keep
+	 * the endpoints returning Service Unavailable until the transient expired.
+	 */
+	public function flush_schema_cache( $plugin ) {
+		$directory = dirname( (string) $plugin );
+
+		if ( in_array( $directory, array( 'armember', 'armember-membership' ), true ) ) {
+			$this->repository->flush_schema_cache();
+		}
 	}
 
 	public function register_abilities() {

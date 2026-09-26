@@ -4,7 +4,7 @@
     "title": "Bono ARM API REST API",
     "summary": "OpenAPI definition for the administrator-protected ARMember transaction and member-management endpoints.",
     "description": "Bono ARM API exposes administrator-only routes for reading ARMember payment transactions, activating ARMember members, and deleting members through a guarded ARMember-aware lifecycle. GitHub Releases is the primary distribution channel for this plugin, with Git Updater as the intended update mechanism for GitHub installs.",
-    "version": "2.1.2"
+    "version": "2.2.0"
   },
   "externalDocs": {
     "description": "Plugin repository",
@@ -51,9 +51,9 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 0
             },
-            "description": "Return only records with invoice IDs greater than this value."
+            "description": "Return only records with invoice IDs greater than this value. Use 0 to start from the first invoice."
           },
           {
             "name": "arm_plan_id",
@@ -122,7 +122,7 @@
           "Members"
         ],
         "summary": "Activate an ARMember member",
-        "description": "Sets the specified ARMember member to active, clears any activation key, and can optionally send ARMember's manual activation email. Requires administrator authentication and the member activation endpoint to be enabled in plugin settings.",
+        "description": "Sets the specified ARMember member to active, clears any activation key, and can optionally send ARMember's manual activation email. Requires the bono_arm_api_activate_members capability and the member activation endpoint to be enabled in plugin settings. Returns 404 when the user does not exist or has no ARMember member record.",
         "security": [
           {
             "basicAuth": []
@@ -185,7 +185,7 @@
           "Members"
         ],
         "summary": "Delete an ARMember member",
-        "description": "Deletes the specified WordPress user on supported single-site installs, reassigns content to the authenticated administrator, and preserves ARMember's delete lifecycle. Requires manage_options, permission to delete the target user, and the member delete endpoint to be enabled. Self-deletion is rejected.",
+        "description": "Deletes the specified WordPress user on supported single-site installs, reassigns content to the authenticated administrator, and preserves ARMember's delete lifecycle. Requires the bono_arm_api_delete_members capability, permission to delete the target user, and the member delete endpoint to be enabled. Self-deletion is rejected. Users who can manage_options are refused with 403 unless the bono_arm_api_can_delete_member filter allows them.",
         "security": [
           {
             "basicAuth": []
@@ -290,10 +290,12 @@
           },
           "arm_payment_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "ISO 8601 in UTC, converted from the site-local time ARMember stores. Empty when ARMember recorded no date."
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "description": "Administrative note: the manual-payment note, or ARMember's manual_by label (for example \"Paid By admin\"). Empty when neither is set."
           },
           "arm_transaction_status": {
             "type": "string"

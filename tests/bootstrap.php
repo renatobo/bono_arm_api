@@ -13,6 +13,7 @@ require_once $tests_dir . '/includes/functions.php';
 tests_add_filter(
 	'muplugins_loaded',
 	static function () {
+		require __DIR__ . '/fixtures/armember-stubs.php';
 		require dirname( __DIR__ ) . '/bono-arm-api.php';
 	}
 );

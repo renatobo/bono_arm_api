@@ -122,6 +122,17 @@ final class Settings_Page {
 				</p>
 			</div>
 
+			<?php if ( $tables_exist && ! $this->repository->invoice_index_exists() ) : ?>
+				<?php $index_sql_id = 'bono-arm-api-index-sql'; ?>
+				<div class="notice inline notice-info">
+					<p><?php esc_html_e( 'ARMember does not index invoice IDs, so every payments request scans the whole payment log. On large logs, ask your database administrator to add this index. ARMember upgrades keep it.', 'bono-arm-api' ); ?></p>
+					<p>
+						<code id="<?php echo esc_attr( $index_sql_id ); ?>"><?php echo esc_html( $this->repository->invoice_index_sql() ); ?></code>
+						<button type="button" class="button button-small bono-arm-api-copy" data-copy-target="<?php echo esc_attr( $index_sql_id ); ?>" aria-describedby="<?php echo esc_attr( $index_sql_id ); ?>"><?php esc_html_e( 'Copy', 'bono-arm-api' ); ?></button>
+					</p>
+				</div>
+			<?php endif; ?>
+
 			<form action="options.php" method="post">
 				<?php
 				settings_fields( 'bono_arm_api_settings' );
@@ -144,7 +155,17 @@ final class Settings_Page {
 					</tbody>
 				</table>
 			</section>
-			<p class="description"><?php esc_html_e( 'Administrator roles receive these capabilities on activation. Delegate individual capabilities only to trusted API users. The v2 payment endpoint hides payer email and notes in view context.', 'bono-arm-api' ); ?></p>
+			<p class="description">
+				<?php
+				printf(
+					/* translators: 1: payments capability, 2: payer details capability. */
+					esc_html__( 'Administrator roles receive these capabilities on activation. Delegate individual capabilities only to trusted API users. %1$s grants payment records, and the v1 payment endpoint always includes payer email and notes. On v2, payer email and notes are returned only with context=edit, which also requires %2$s.', 'bono-arm-api' ),
+					'<code>' . esc_html( Capabilities::READ_PAYMENTS ) . '</code>',
+					'<code>' . esc_html( Capabilities::READ_PAYER_DETAILS ) . '</code>'
+				);
+				?>
+			</p>
+			<p class="description"><?php esc_html_e( 'The API refuses to delete users who can manage site options. Developers can change this with the bono_arm_api_can_delete_member filter.', 'bono-arm-api' ); ?></p>
 			<div id="bono-arm-api-copy-status" class="screen-reader-text" aria-live="polite"></div>
 		</div>
 		<?php
