@@ -4,3 +4,4 @@
 /temp/
 /vendor/
 .env.local
+/.review/

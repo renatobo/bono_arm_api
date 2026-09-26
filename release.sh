@@ -40,6 +40,23 @@ if git rev-parse "$TAG" >/dev/null 2>&1; then
   exit 1
 fi
 
+assert_on_current_main() {
+  local branch
+
+  branch="$(git rev-parse --abbrev-ref HEAD)"
+  if [[ "$branch" != "main" ]]; then
+    echo "Releases are tagged from main. Current branch: $branch"
+    echo "Merge the release pull request, then run this from an up-to-date main."
+    exit 1
+  fi
+
+  git fetch --quiet origin main
+  if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+    echo "Local main does not match origin/main. Pull or push before releasing."
+    exit 1
+  fi
+}
+
 is_allowed_release_path() {
   local path="$1"
   local allowed
@@ -201,6 +218,7 @@ assert_release_notes_file() {
   done
 }
 
+assert_on_current_main
 assert_releasable_worktree
 assert_release_notes_file
 
