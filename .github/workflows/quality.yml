@@ -34,7 +34,9 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-      - run: find . -path './temp' -prune -o -name '*.php' -exec php -l {} \;
+      # xargs exits non-zero when any php -l call fails; find -exec ... \; would not.
+      # -n1 because php -l lints only the first file before PHP 8.3.
+      - run: find . -path './vendor' -prune -o -path './temp' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
 
   rest-integration:
     runs-on: ubuntu-latest

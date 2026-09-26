@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="Bono ARM API">
-	<description>WordPress coding standards. PHP compatibility is enforced by the CI runtime matrix.</description>
+	<description>WordPress coding standards and PHP 7.4+ compatibility.</description>
 	<file>bono-arm-api.php</file>
 	<file>includes</file>
 	<file>uninstall.php</file>
@@ -17,4 +17,6 @@
 		<exclude name="Squiz.Commenting.VariableComment"/>
 	</rule>
 	<config name="minimum_supported_wp_version" value="6.9"/>
+	<config name="testVersion" value="7.4-"/>
+	<rule ref="PHPCompatibilityWP"/>
 </ruleset>

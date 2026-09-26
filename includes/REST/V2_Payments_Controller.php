@@ -39,11 +39,16 @@ final class V2_Payments_Controller extends WP_REST_Controller {
 	}
 
 	public function get_items_permissions_check( $request ) {
-		if ( current_user_can( Capabilities::READ_PAYMENTS ) ) {
-			return true;
+		if ( ! current_user_can( Capabilities::READ_PAYMENTS ) ) {
+			return new WP_Error( 'rest_forbidden', __( 'You are not allowed to read payments.', 'bono-arm-api' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
-		return new WP_Error( 'rest_forbidden', __( 'You are not allowed to read payments.', 'bono-arm-api' ), array( 'status' => rest_authorization_required_code() ) );
+		// Edit context adds payer email and notes, so it needs its own capability.
+		if ( 'edit' === $request['context'] && ! current_user_can( Capabilities::READ_PAYER_DETAILS ) ) {
+			return new WP_Error( 'rest_forbidden_context', __( 'You are not allowed to read payer details.', 'bono-arm-api' ), array( 'status' => rest_authorization_required_code() ) );
+		}
+
+		return true;
 	}
 
 	public function get_items( $request ) {

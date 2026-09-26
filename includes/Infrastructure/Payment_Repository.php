@@ -65,12 +65,11 @@ final class Payment_Repository {
 
 		$tables = $this->tables();
 		$offset = ( $page - 1 ) * $per_page;
-		$manual = '%' . $wpdb->esc_like( 'manual_by' ) . '%';
 
 		list( $where, $where_args ) = $this->where_clause( $minimum_invoice_id, $plan_id );
 
 		$args = array_merge(
-			array( $manual, $tables['payment_log'], $tables['members'], $tables['payment_log'], $tables['members'] ),
+			array( $tables['payment_log'], $tables['members'], $tables['payment_log'], $tables['members'] ),
 			$where_args,
 			$where_args,
 			array( $per_page, $offset )
@@ -86,9 +85,7 @@ final class Payment_Repository {
 				CONCAT(a.arm_currency, ' ', a.arm_amount) AS arm_paid_amount,
 				a.arm_payment_gateway,
 				a.arm_payment_date,
-				IF(a.arm_extra_vars LIKE %s,
-					SUBSTRING_INDEX(SUBSTRING_INDEX(a.arm_extra_vars, 's:13:\"', -1), '\";}', 1),
-					'') AS notes,
+				a.arm_extra_vars,
 				a.arm_transaction_status,
 				totals.total_count AS bono_total_count
 			FROM %i AS a
@@ -108,7 +105,7 @@ final class Payment_Repository {
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		if ( $wpdb->last_error ) {
-			return new WP_Error( 'bono_arm_api_database_error', __( 'Unable to load ARMember payment records.', 'bono-arm-api' ), array( 'status' => 500 ) );
+			return $this->database_error( 'get_page' );
 		}
 
 		$total = 0;
@@ -116,6 +113,10 @@ final class Payment_Repository {
 			$total = (int) $rows[0]['bono_total_count'];
 		} elseif ( $page > 1 ) {
 			$total = $this->count( $minimum_invoice_id, $plan_id );
+
+			if ( is_wp_error( $total ) ) {
+				return $total;
+			}
 		}
 
 		foreach ( $rows as &$row ) {
@@ -139,12 +140,11 @@ final class Payment_Repository {
 
 		$tables = $this->tables();
 		$limit  = $per_page + 1;
-		$manual = '%' . $wpdb->esc_like( 'manual_by' ) . '%';
 
 		list( $where, $where_args ) = $this->where_clause( $after_invoice_id, $plan_id );
 
 		$args = array_merge(
-			array( $manual, $tables['payment_log'], $tables['members'] ),
+			array( $tables['payment_log'], $tables['members'] ),
 			$where_args,
 			array( $limit )
 		);
@@ -159,9 +159,7 @@ final class Payment_Repository {
 				CONCAT(a.arm_currency, ' ', a.arm_amount) AS arm_paid_amount,
 				a.arm_payment_gateway,
 				a.arm_payment_date,
-				IF(a.arm_extra_vars LIKE %s,
-					SUBSTRING_INDEX(SUBSTRING_INDEX(a.arm_extra_vars, 's:13:\"', -1), '\";}', 1),
-					'') AS notes,
+				a.arm_extra_vars,
 				a.arm_transaction_status
 			FROM %i AS a
 			INNER JOIN %i AS b ON a.arm_user_id = b.arm_user_id
@@ -174,7 +172,7 @@ final class Payment_Repository {
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		if ( $wpdb->last_error ) {
-			return new WP_Error( 'bono_arm_api_database_error', __( 'Unable to load ARMember payment records.', 'bono-arm-api' ), array( 'status' => 500 ) );
+			return $this->database_error( 'get_cursor_page' );
 		}
 
 		$has_more = count( $rows ) > $per_page;
@@ -185,11 +183,20 @@ final class Payment_Repository {
 		$rows = array_map( array( $this, 'normalize_row' ), $rows );
 		$last = $rows ? end( $rows ) : null;
 
+		$total = null;
+		if ( $include_totals ) {
+			$total = $this->count( $after_invoice_id, $plan_id );
+
+			if ( is_wp_error( $total ) ) {
+				return $total;
+			}
+		}
+
 		return array(
 			'payments'    => $rows,
 			'has_more'    => $has_more,
 			'next_cursor' => $last ? (int) $last['arm_log_id'] : null,
-			'total_count' => $include_totals ? $this->count( $after_invoice_id, $plan_id ) : null,
+			'total_count' => $total,
 		);
 	}
 
@@ -209,8 +216,86 @@ final class Payment_Repository {
 			array_merge( array( $tables['payment_log'], $tables['members'] ), $where_args )
 		);
 
-		return (int) $wpdb->get_var( $query );
+		$total = $wpdb->get_var( $query );
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+
+		if ( $wpdb->last_error ) {
+			return $this->database_error( 'count' );
+		}
+
+		return (int) $total;
+	}
+
+	/**
+	 * Reports whether a WordPress user has a row in ARMember's members table.
+	 */
+	public function member_exists( $user_id ) {
+		global $wpdb;
+
+		$tables = $this->tables();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- ARMember exposes no lookup API; this runs once per mutating request, right before ARMember writes the same row, so a cached answer could be stale.
+		$found = $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM %i WHERE arm_user_id = %d LIMIT 1', $tables['members'], $user_id ) );
+
+		return '1' === (string) $found;
+	}
+
+	/**
+	 * Reports whether arm_payment_log has an index led by arm_invoice_id.
+	 *
+	 * ARMember does not create one, so every payments query scans and sorts the whole table.
+	 * The answer is cached like tables_exist(), because it only changes when an operator alters
+	 * the table.
+	 */
+	public function invoice_index_exists() {
+		global $wpdb;
+
+		$cache_key = 'bono_arm_api_invoice_index_' . get_current_blog_id();
+		$cached    = get_transient( $cache_key );
+
+		if ( is_array( $cached ) && isset( $cached['exists'] ) ) {
+			return (bool) $cached['exists'];
+		}
+
+		if ( ! $this->tables_exist() ) {
+			return false;
+		}
+
+		$tables = $this->tables();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema probe with no core API; the result is cached in a transient for BONO_ARM_API_TABLE_CHECK_TTL below.
+		$index = $wpdb->get_var( $wpdb->prepare( 'SHOW INDEX FROM %i WHERE Column_name = %s AND Seq_in_index = 1', $tables['payment_log'], 'arm_invoice_id' ) );
+		$found = null !== $index && ! $wpdb->last_error;
+
+		set_transient( $cache_key, array( 'exists' => $found ), BONO_ARM_API_TABLE_CHECK_TTL );
+		return $found;
+	}
+
+	/**
+	 * The statement an operator can run to add the index invoice_index_exists() looks for.
+	 */
+	public function invoice_index_sql() {
+		$tables = $this->tables();
+		return sprintf( 'ALTER TABLE `%s` ADD INDEX `bono_invoice_id` (`arm_invoice_id`);', $tables['payment_log'] );
+	}
+
+	/**
+	 * Drops the cached schema probes so the next request checks the database again.
+	 */
+	public function flush_schema_cache() {
+		delete_transient( 'bono_arm_api_tables_' . get_current_blog_id() );
+		delete_transient( 'bono_arm_api_invoice_index_' . get_current_blog_id() );
+	}
+
+	private function database_error( $operation ) {
+		global $wpdb;
+
+		if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only when WP_DEBUG_LOG is on; the client receives a generic message.
+			error_log( sprintf( 'Bono API for ARMember: %s query failed: %s', $operation, $wpdb->last_error ) );
+		}
+
+		return new WP_Error( 'bono_arm_api_database_error', __( 'Unable to load ARMember payment records.', 'bono-arm-api' ), array( 'status' => 500 ) );
 	}
 
 	/**
@@ -234,18 +319,73 @@ final class Payment_Repository {
 	}
 
 	public function normalize_row( $row ) {
+		$raw = $row;
+
 		foreach ( $row as $key => $value ) {
 			$row[ $key ] = null === $value ? '' : $value;
 		}
 
-		$row['id']         = (int) $row['id'];
-		$row['arm_log_id'] = (int) $row['arm_log_id'];
+		$row['id']               = (int) $row['id'];
+		$row['arm_log_id']       = (int) $row['arm_log_id'];
+		$row['arm_payment_date'] = $this->to_utc( $row['arm_payment_date'] );
+		$row['notes']            = $this->extract_notes( $row['arm_extra_vars'] );
+		unset( $row['arm_extra_vars'] );
 
-		if ( $row['arm_payment_date'] ) {
-			$timestamp               = strtotime( $row['arm_payment_date'] );
-			$row['arm_payment_date'] = false !== $timestamp ? gmdate( 'c', $timestamp ) : '';
+		/**
+		 * Filters one normalized payment row before either API version maps it to a response.
+		 *
+		 * Keep every field's type unchanged; both OpenAPI specs describe these fields.
+		 *
+		 * @param array $row Normalized row.
+		 * @param array $raw Row as returned by the database.
+		 */
+		return apply_filters( 'bono_arm_api_payment_row', $row, $raw );
+	}
+
+	/**
+	 * Converts an ARMember payment date to ISO 8601 UTC.
+	 *
+	 * ARMember stores arm_payment_date with current_time( 'mysql' ), which is site-local time,
+	 * and uses 1970-01-01 00:00:00 as its "no date" column default.
+	 */
+	private function to_utc( $value ) {
+		if ( ! is_string( $value ) || '' === $value || 0 === strpos( $value, '1970-01-01 00:00:00' ) || 0 === strpos( $value, '0000-00-00' ) ) {
+			return '';
 		}
 
-		return $row;
+		try {
+			$local = new \DateTimeImmutable( $value, wp_timezone() );
+		} catch ( \Exception $e ) {
+			return '';
+		}
+
+		return $local->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'c' );
+	}
+
+	/**
+	 * Returns the administrative note from ARMember's serialized arm_extra_vars column.
+	 *
+	 * Manual payments store the admin's text under `note`; system and admin-assigned plans store
+	 * a `manual_by` label, which ARMember translates and HTML-escapes before saving.
+	 */
+	private function extract_notes( $raw ) {
+		if ( ! is_string( $raw ) || '' === $raw || ! is_serialized( $raw ) ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize,WordPress.PHP.NoSilencedErrors.Discouraged -- allowed_classes=false prevents object instantiation; ARMember stores this column serialized, and a corrupt value must not raise a notice into the REST response.
+		$vars = @unserialize( $raw, array( 'allowed_classes' => false ) );
+
+		if ( ! is_array( $vars ) ) {
+			return '';
+		}
+
+		foreach ( array( 'note', 'manual_by' ) as $key ) {
+			if ( isset( $vars[ $key ] ) && is_scalar( $vars[ $key ] ) && '' !== (string) $vars[ $key ] ) {
+				return html_entity_decode( (string) $vars[ $key ], ENT_QUOTES, 'UTF-8' );
+			}
+		}
+
+		return '';
 	}
 }

@@ -7,7 +7,7 @@
 
 WordPress plugin that exposes protected REST API endpoints for ARMember payment logs, admin-triggered member activation, and guarded member deletion.
 
-Current version: `2.1.2`
+Current version: `2.2.0`
 
 ## Quick start
 
@@ -112,13 +112,16 @@ Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or upd
 
 ## Authentication
 
-Endpoints require WordPress authentication and their dedicated capability. Administrators receive all three capabilities on activation. Member deletion additionally requires WordPress's object-level `delete_user` capability for the target account.
+Endpoints require WordPress authentication and their dedicated capability. Administrators receive every capability once, on activation or on the first update that introduces it. Removing a capability from the administrator role sticks: later updates do not grant it again. Member deletion additionally requires WordPress's object-level `delete_user` capability for the target account.
 
 | Operation | Capability |
 | --- | --- |
 | Read payments | `bono_arm_api_read_payments` |
+| Read payer email and notes (v2 `context=edit`) | `bono_arm_api_read_payer_details` |
 | Activate members | `bono_arm_api_activate_members` |
 | Delete members | `bono_arm_api_delete_members` |
+
+The v1 payments endpoint always includes payer email and notes, so treat `bono_arm_api_read_payments` as access to personal data whenever v1 is in use.
 
 ## Version 2 API
 
@@ -128,7 +131,11 @@ The v1 API remains supported without route or parameter changes. New integration
 - `POST /wp-json/bono_armember/v2/members/{user_id}/activate`
 - `DELETE /wp-json/bono_armember/v2/members/{user_id}?reassign_user_id=456`
 
-Payment responses provide `has_more` and `next_cursor`. Set `include_totals=true` only when an exact total is needed. The default `context=view` excludes payer email and administrative notes; trusted clients with the read capability can explicitly request `context=edit`.
+Payment responses provide `has_more` and `next_cursor`. Set `include_totals=true` only when an exact total is needed. The default `context=view` excludes payer email and administrative notes. `context=edit` includes them and additionally requires `bono_arm_api_read_payer_details`; without it the request fails with `403 rest_forbidden_context`.
+
+Payment dates in both API versions are ISO 8601 in UTC. ARMember stores them in site-local time, and the plugin converts them using the site's timezone setting.
+
+ARMember does not index `arm_invoice_id`, so every payments request scans the whole payment log. On large logs, add the index shown on the plugin's settings screen (`ALTER TABLE wp_arm_payment_log ADD INDEX bono_invoice_id (arm_invoice_id);` with your table prefix). ARMember upgrades keep it.
 
 WordPress 7 registers the private, read-only `bono-arm-api/get-status` ability. Destructive operations are intentionally not exposed through the Abilities API. See `docs/wordpress-7-compatibility.md` for the compatibility matrix and ARMember fixture policy.
 
@@ -155,7 +162,7 @@ curl -u your_username:your_app_password \
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `arm_invoice_id_gt` | integer | Yes | Return records where invoice ID is greater than this value |
+| `arm_invoice_id_gt` | integer | Yes | Return records where invoice ID is greater than this value. Use `0` to start from the first invoice |
 | `arm_plan_id` | integer | No | Filter by ARMember plan ID |
 | `arm_page` | integer | No | Page number (default: `1`, maximum: `10000`) |
 | `arm_perpage` | integer | No | Items per page (default: `50`, maximum: `100`) |
@@ -235,6 +242,8 @@ Example success response:
 }
 ```
 
+The user must have an ARMember member record. Other users get `404` with the message "The user is not an ARMember member."
+
 ### Deletion endpoint
 
 `POST /wp-json/bono_armember/v1/members/{user_id}/delete`
@@ -255,11 +264,13 @@ Behavior:
 - requires `bono_arm_api_delete_members` plus permission to delete the target user
 - requires the member delete endpoint toggle to be enabled in plugin settings
 - rejects deletion of the account authenticating the request
+- refuses users who can `manage_options` with `403`, unless the `bono_arm_api_can_delete_member` filter allows them
 - currently supports single-site installs only
 - reassigns the deleted member's content to the authenticated administrator
 - uses `wp_delete_user()` as the primary deletion path
 - relies on ARMember's `delete_user` and `deleted_user` lifecycle when available
 - falls back to ARMember's explicit pre/post-delete methods only when those methods are loaded but the hooks are not attached
+- ARMember's pre-delete cleanup cancels the member's recurring gateway subscriptions; this cannot be undone
 
 Example success response:
 
@@ -318,6 +329,15 @@ Errors use meaningful HTTP status codes: `400` for invalid input, `403` for disa
   }
 }
 ```
+
+## Hooks
+
+| Hook | Type | Arguments | Purpose |
+| --- | --- | --- | --- |
+| `bono_arm_api_member_activated` | action | `$user_id`, `$send_email`, `$email_sent`, `$actor_id` | Runs after an API activation. Use it for audit logging. |
+| `bono_arm_api_member_deleted` | action | `$user_id`, `$reassign_user_id`, `$actor_id`, `$user` (`WP_User` snapshot) | Runs after an API deletion. Use it for audit logging. |
+| `bono_arm_api_can_delete_member` | filter | `$allowed`, `$user`, `$reassign_user_id` | Return `true` to allow, `false` or a `WP_Error` to refuse. Defaults to refusing users who can `manage_options`. |
+| `bono_arm_api_payment_row` | filter | `$row`, `$raw_row` | Adjusts a normalized payment row before either API version maps it. Keep field types unchanged. |
 
 ## Automatic updates
 

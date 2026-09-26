@@ -3,7 +3,7 @@ Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 2.1.2
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -16,6 +16,8 @@ Bono API for ARMember adds protected endpoints to retrieve ARMember payment tran
 
 Access control:
 - Access uses dedicated least-privilege capabilities; deletion also checks permission for the target user.
+- Payer email and notes on the v2 payments endpoint (`context=edit`) need the separate `bono_arm_api_read_payer_details` capability.
+- The API refuses to delete users who can `manage_options` unless the `bono_arm_api_can_delete_member` filter allows it.
 - Endpoint availability can be enabled/disabled in plugin settings.
 
 Endpoint:
@@ -38,6 +40,8 @@ Features:
 - Checked-in OpenAPI 3.1 and Postman specs under `docs/`
 - Compatible with WordPress Application Password authentication
 - Returns successful transactions only
+- Payment dates are ISO 8601 in UTC, converted from the site-local time ARMember stores
+- Audit and extension hooks: `bono_arm_api_member_activated`, `bono_arm_api_member_deleted`, `bono_arm_api_can_delete_member`, `bono_arm_api_payment_row`
 - Requires ARMember or ARMember Lite; without it no capabilities are granted and the endpoints return Service Unavailable
 - Returns a `status: 0` dependency message if ARMember tables are unavailable
 
@@ -63,7 +67,7 @@ Endpoint:
 - POST `/wp-json/bono_armember/v1/members/{user_id}/delete`
 
 Required parameter:
-- `arm_invoice_id_gt` (integer): return records with invoice ID greater than this value.
+- `arm_invoice_id_gt` (integer): return records with invoice ID greater than this value. Use `0` to start from the first invoice.
 
 Optional parameters:
 - `arm_plan_id` (integer): filter by ARMember plan ID.
@@ -100,6 +104,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.2.0 =
+Changes v1 output: payment dates are now converted to UTC and notes are parsed correctly. The API refuses to delete administrators, and v2 context=edit needs the new bono_arm_api_read_payer_details capability. Review integrations before updating.
+
 = 2.1.2 =
 Requires PHP_CodeSniffer 3.13.6 or newer in development environments and confirms compatibility through WordPress 7.1. No plugin runtime changes.
 
@@ -130,26 +137,41 @@ Clarifies GitHub-first distribution with Git Updater metadata and aligns admin a
 == Frequently Asked Questions ==
 
 = Who can access the endpoint? =
-Administrators receive `bono_arm_api_read_payments`, `bono_arm_api_activate_members`, and `bono_arm_api_delete_members` on activation, and the plugin removes them again on deactivation. Integrations can be granted only the capabilities they require. Member deletion also requires WordPress permission to delete the target user.
+Administrators receive `bono_arm_api_read_payments`, `bono_arm_api_read_payer_details`, `bono_arm_api_activate_members`, and `bono_arm_api_delete_members` once, on activation or on the first update that introduces them, and the plugin removes them again on deactivation. Removing a capability from the administrator role sticks across updates. Integrations can be granted only the capabilities they require. Member deletion also requires WordPress permission to delete the target user. Uninstall removes the capabilities from every role.
 
 = How can I disable the endpoint? =
 Go to Settings -> Bono ARM API and uncheck the endpoint toggle you want to disable.
 
 = What does the activation endpoint do? =
-It activates the specified ARMember member by setting them to active status, clears any activation key, and can optionally send ARMember's manual activation email.
+It activates the specified ARMember member by setting them to active status, clears any activation key, and can optionally send ARMember's manual activation email. Users without an ARMember member record get a 404.
 
 = Is there a delete-member endpoint? =
 Yes.
 
-The protected `POST /wp-json/bono_armember/v1/members/{user_id}/delete` route deletes the WordPress user on single-site installs and preserves ARMember's safer cleanup lifecycle around `wp_delete_user()`. It rejects self-deletion, verifies WordPress's object-level delete capability, and reassigns content to the authenticated administrator. It uses ARMember's registered delete hooks when they are active and falls back to ARMember's explicit pre-delete and post-delete methods only when those methods are loaded but the hooks are not attached.
+The protected `POST /wp-json/bono_armember/v1/members/{user_id}/delete` route deletes the WordPress user on single-site installs and preserves ARMember's safer cleanup lifecycle around `wp_delete_user()`. It rejects self-deletion, refuses users who can `manage_options` unless the `bono_arm_api_can_delete_member` filter allows them, verifies WordPress's object-level delete capability, and reassigns content to the authenticated administrator. ARMember's cleanup cancels the member's recurring gateway subscriptions. It uses ARMember's registered delete hooks when they are active and falls back to ARMember's explicit pre-delete and post-delete methods only when those methods are loaded but the hooks are not attached.
 
 = What happens if `arm_invoice_id_gt` is missing? =
 The API responds with `status: 0` and a message indicating the missing parameter.
+
+= Why is the payments endpoint slow on a large site? =
+ARMember does not index `arm_invoice_id`, so each request scans the whole payment log. The plugin's settings screen shows the `ALTER TABLE` statement that adds the index. ARMember upgrades keep it.
 
 = What happens if ARMember is inactive or missing? =
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 2.2.0 =
+* Added the `bono_arm_api_read_payer_details` capability, required for v2 `context=edit`. Existing administrators receive it on update.
+* Added `bono_arm_api_member_activated` and `bono_arm_api_member_deleted` actions, and `bono_arm_api_can_delete_member` and `bono_arm_api_payment_row` filters.
+* The API now refuses to delete users who can `manage_options` unless the `bono_arm_api_can_delete_member` filter allows it, and runs every validation before ARMember's subscription-cancelling cleanup.
+* Activation returns 404 for users without an ARMember member record instead of reporting success.
+* Fixed payment dates, which carried site-local time labelled as UTC, in both API versions.
+* Fixed `notes`, which matched only the English "Paid By admin" label and could return raw serialized data on translated sites.
+* The v1 payments endpoint accepts `arm_invoice_id_gt=0`.
+* Capabilities are granted once, so updates no longer restore a capability removed from administrators. Uninstall removes them from every role.
+* The settings screen detects ARMember's missing `arm_invoice_id` index and shows the statement that adds it.
+* Autoloaded the schema-version option, cleared the table probe cache when ARMember is activated, and logged database failures under `WP_DEBUG_LOG`.
 
 = 2.1.2 =
 * Raised the minimum `squizlabs/php_codesniffer` development dependency to 3.13.6 so future Composer resolutions cannot select a version affected by GHSA-hmqg-cxww-wqhq. The package remains excluded from release zips.

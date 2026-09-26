@@ -56,13 +56,25 @@ function bono_arm_api_uninstall_site() {
 	delete_option( 'bono_arm_api_enable_member_activation' );
 	delete_option( 'bono_arm_api_enable_member_delete' );
 	delete_option( 'bono_arm_api_schema_version' );
+	delete_option( 'bono_arm_api_caps_granted' );
 	delete_transient( 'bono_arm_api_tables_' . get_current_blog_id() );
+	delete_transient( 'bono_arm_api_invoice_index_' . get_current_blog_id() );
 
-	$administrator = get_role( 'administrator' );
-	if ( $administrator ) {
-		$administrator->remove_cap( 'bono_arm_api_read_payments' );
-		$administrator->remove_cap( 'bono_arm_api_activate_members' );
-		$administrator->remove_cap( 'bono_arm_api_delete_members' );
+	// Capabilities may have been delegated to any role, not only administrators. Grants made
+	// directly to individual users are left in place: sweeping every user does not scale.
+	$capabilities = array(
+		'bono_arm_api_read_payments',
+		'bono_arm_api_activate_members',
+		'bono_arm_api_delete_members',
+		'bono_arm_api_read_payer_details',
+	);
+
+	foreach ( wp_roles()->role_objects as $role ) {
+		foreach ( $capabilities as $capability ) {
+			if ( $role->has_cap( $capability ) ) {
+				$role->remove_cap( $capability );
+			}
+		}
 	}
 }
 

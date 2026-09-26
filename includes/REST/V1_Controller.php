@@ -128,7 +128,7 @@ final class V1_Controller extends WP_REST_Controller {
 	private function payment_args() {
 		return array(
 			'arm_plan_id'       => $this->positive_integer_arg( false ),
-			'arm_invoice_id_gt' => $this->positive_integer_arg( true ),
+			'arm_invoice_id_gt' => $this->non_negative_integer_arg( true ),
 			'arm_page'          => $this->bounded_integer_arg( 1, BONO_ARM_API_MAX_PAGE, 1 ),
 			'arm_perpage'       => $this->bounded_integer_arg( 1, BONO_ARM_API_MAX_PER_PAGE, 50 ),
 		);
@@ -154,6 +154,17 @@ final class V1_Controller extends WP_REST_Controller {
 			'sanitize_callback' => 'absint',
 			'validate_callback' => static function ( $value ) {
 				return is_numeric( $value ) && (int) $value > 0 && (string) (int) $value === (string) $value;
+			},
+		);
+	}
+
+	private function non_negative_integer_arg( $required ) {
+		return array(
+			'type'              => 'integer',
+			'required'          => $required,
+			'sanitize_callback' => 'absint',
+			'validate_callback' => static function ( $value ) {
+				return is_numeric( $value ) && (int) $value >= 0 && (string) (int) $value === (string) $value;
 			},
 		);
 	}

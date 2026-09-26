@@ -1,12 +1,12 @@
 # WordPress Plugin Security Assessment
 
-Assessed version: 2.0.3 (post-review remediation).
+Assessed version: 2.2.0 (September 2026 audit remediation).
 
 ## Executive Summary
 
 - Scope: `bono-arm-api.php`, `includes/` (Plugin, Capabilities, Privacy, Abilities, Admin, ARMember, Infrastructure, REST), `uninstall.php`, admin assets, API specifications, documentation, packaging scripts, and GitHub Actions workflows.
 - Overall security risk: **Low**.
-- Open findings: Critical 0, High 0, Medium 0, Low 0. One accepted exposure is tracked under Residual Gaps (`context=edit` payer data).
+- Open findings: Critical 0, High 0, Medium 0, Low 0. The v1 payments endpoint's unconditional payer data is tracked under Residual Gaps.
 - All previously recorded authorization, deletion, REST validation/status, database-query, uninstall, conditional asset-loading, and minimum-version findings are remediated.
 
 ## Critical
@@ -26,6 +26,32 @@ No findings.
 No findings.
 
 ## Resolved Findings
+
+### SEC-2026-01 Member deletion reached administrators and triggered subscription cancellation without a trail
+
+- Status: **Resolved** in 2.2.0.
+- Original impact: the delete routes removed any WordPress user the caller could delete, including other administrators. ARMember's pre-delete cleanup cancels recurring gateway subscriptions, and nothing recorded the action.
+- Resolution: users who can `manage_options` are refused with 403 unless the `bono_arm_api_can_delete_member` filter allows them. Every validation runs before ARMember cleanup. `bono_arm_api_member_deleted` and `bono_arm_api_member_activated` actions give sites an audit point.
+
+### SEC-2026-02 `context=edit` exposed payer data to every payments reader
+
+- Status: **Resolved** in 2.2.0 for v2.
+- Resolution: `context=edit` requires the new `bono_arm_api_read_payer_details` capability and otherwise fails with 403 `rest_forbidden_context`. The settings screen states that v1 always returns payer data.
+
+### SEC-2026-03 Activation wrote ARMember status onto non-members
+
+- Status: **Resolved** in 2.2.0.
+- Resolution: activation requires an `arm_members` row and returns 404 otherwise, so `arm_set_member_status()` no longer stamps status meta onto arbitrary accounts.
+
+### SEC-2026-04 Updates re-granted capabilities an operator had removed
+
+- Status: **Resolved** in 2.2.0.
+- Resolution: a granted-capabilities list records what administrators already received. Updates grant only capabilities introduced since, and uninstall removes the capabilities from every role.
+
+### DATA-2026-01 Payment dates mislabelled as UTC; notes could leak serialized data
+
+- Status: **Resolved** in 2.2.0.
+- Resolution: dates are converted from `wp_timezone()` to UTC. Notes are parsed in PHP from `arm_extra_vars` with `unserialize( ..., array( 'allowed_classes' => false ) )` instead of fixed-length SQL string surgery that returned the raw column on translated sites.
 
 ### WPCOMPAT-001 Minimum WordPress version conflicted with the documented authentication path
 
@@ -60,12 +86,12 @@ No findings.
 - Admin output uses context-appropriate escaping, and external links use `noopener noreferrer`.
 - Member deletion uses WordPress's `wp_delete_user()` and preserves ARMember pre/post-delete cleanup behavior.
 - The single registered ability is read-only, capability-gated, and excluded from REST; destructive member actions are never exposed as abilities.
-- No uploads, dynamic includes from request input, unsafe deserialization, remote-fetch sinks, secrets, or shell execution are present in runtime plugin code.
+- No uploads, dynamic includes from request input, remote-fetch sinks, secrets, or shell execution are present in runtime plugin code. The one `unserialize()` call reads ARMember's own column with `allowed_classes => false`.
 
 ## Verification and Residual Gaps
 
 - WordPress Coding Standards, PHP syntax checks across 7.4-8.5, PHPUnit, and the official Plugin Check run in `.github/workflows/quality.yml` and gate releases.
-- `context=edit` on the v2 payments endpoint exposes payer email and notes to any holder of `bono_arm_api_read_payments`. This is intentional and documented on the settings screen, but sites delegating that capability broadly should treat it as PII access.
-- The plugin has not been executed in a full WordPress + ARMember environment, so capability mapping, activation email behavior, ARMember cleanup hooks, SQL query plans, and `WP_DEBUG` runtime notices require integration verification.
-- Offset pagination remains in v1 for backward compatibility. It is bounded, but production-like `EXPLAIN` checks are still recommended for high-volume ARMember tables.
+- The frozen v1 payments endpoint always returns payer email and notes to holders of `bono_arm_api_read_payments`. This is documented on the settings screen; sites delegating that capability should treat it as PII access.
+- Payment reads, activation, deletion, and capability upgrades are covered by fixture tests with hand-written ARMember stand-ins (`tests/ArmemberFixtureTest.php`). A real ARMember install is still needed to verify the activation mailer, ARMember's registered delete hooks, and query plans.
+- ARMember does not index `arm_invoice_id`, so both API versions scan and sort the payment log. The settings screen detects this and shows the index statement; the plugin does not alter ARMember's table itself. Offset pagination remains in v1 for backward compatibility.
 - CI integration tests run WordPress 6.9 and 7.1, covering the declared floor and current tested version.

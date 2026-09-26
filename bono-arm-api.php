@@ -3,7 +3,7 @@
 Plugin Name: Bono API for ARMember
 Plugin URI: https://github.com/renatobo/bono_arm_api
 Description: Capability-controlled REST API access to ARMember payment logs and member management.
-Version: 2.1.2
+Version: 2.2.0
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BONO_ARM_API_VERSION', '2.1.2' );
+define( 'BONO_ARM_API_VERSION', '2.2.0' );
 define( 'BONO_ARM_API_FILE', __FILE__ );
 define( 'BONO_ARM_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BONO_ARM_API_URL', plugin_dir_url( __FILE__ ) );
@@ -33,6 +33,7 @@ define( 'BONO_ARM_API_OPTION_ENABLE_TRANSACTIONS', 'bono_arm_api_enable_transact
 define( 'BONO_ARM_API_OPTION_ENABLE_MEMBER_ACTIVATION', 'bono_arm_api_enable_member_activation' );
 define( 'BONO_ARM_API_OPTION_ENABLE_MEMBER_DELETE', 'bono_arm_api_enable_member_delete' );
 define( 'BONO_ARM_API_OPTION_SCHEMA_VERSION', 'bono_arm_api_schema_version' );
+define( 'BONO_ARM_API_OPTION_CAPS_GRANTED', 'bono_arm_api_caps_granted' );
 define( 'BONO_ARM_API_SETTINGS_PAGE', 'bono-arm-api-settings' );
 define( 'BONO_ARM_API_MAX_PER_PAGE', 100 );
 define( 'BONO_ARM_API_MAX_PAGE', 10000 );
@@ -40,6 +41,7 @@ define( 'BONO_ARM_API_TABLE_CHECK_TTL', 5 * MINUTE_IN_SECONDS );
 define( 'BONO_ARM_API_CAP_READ_PAYMENTS', 'bono_arm_api_read_payments' );
 define( 'BONO_ARM_API_CAP_ACTIVATE_MEMBERS', 'bono_arm_api_activate_members' );
 define( 'BONO_ARM_API_CAP_DELETE_MEMBERS', 'bono_arm_api_delete_members' );
+define( 'BONO_ARM_API_CAP_READ_PAYER_DETAILS', 'bono_arm_api_read_payer_details' );
 
 spl_autoload_register(
 	static function ( $class_name ) {
