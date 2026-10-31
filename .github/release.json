@@ -1,0 +1,29 @@
+{
+  "main": "bono-arm-api.php",
+  "constant": "BONO_ARM_API_VERSION",
+  "slug": "bono-arm-api",
+  "zip": "bono_arm_api-{version}.zip",
+  "build": "bash build.sh",
+  "php": "8.3",
+  "gates": [
+    "quality.yml"
+  ],
+  "attest": true,
+  "specs": [
+    [
+      "docs/bono-arm-api-openapi.json",
+      [
+        "info",
+        "version"
+      ]
+    ],
+    [
+      "docs/bono-arm-api-openapi-v2.json",
+      [
+        "info",
+        "version"
+      ]
+    ]
+  ],
+  "readme": true
+}

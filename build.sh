@@ -35,7 +35,7 @@ mkdir -p "$PACKAGE_DIR"
 rm -f "$OUTPUT_PATH"
 
 rsync -a \
-  --exclude '.git/' \
+  --exclude '.git' \
   --exclude '.github/' \
   --exclude '.claude/' \
   --exclude '.DS_Store' \

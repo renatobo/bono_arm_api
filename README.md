@@ -92,23 +92,10 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 ## Releases
 
-To prepare a tagged release from the command line:
-
-```bash
-./release.sh x.y.z
-```
-
-That script:
-
-- updates the plugin header version in `bono-arm-api.php`
-- updates `BONO_ARM_API_VERSION`
-- updates the `Stable tag` in `readme.txt`
-- commits the version bump
-- creates and pushes the git tag `vx.y.z`
-- verifies that all version references match
-- requires `release-notes/x.y.z.md` with the standard release-note headings
-
-Pushing the tag triggers GitHub Actions, which runs `./build.sh`, creates or updates the GitHub Release using the checked-in release notes file, and uploads the zip, SHA-256 checksum, and provenance attestation.
+Prepare matching version metadata and `release-notes/X.Y.Z.md` in a PR into
+`main`. Apply the **`release`** label before merging. GitHub runs the exact
+merge commit through the existing CI gates and publishes its tested ZIP and
+checksum automatically. See `AGENTS.md` for the complete procedure and retries.
 
 ## Authentication
 
