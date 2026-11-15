@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750" height="200" viewBox="0 0 750 200" fill="none">
+  <rect width="750" height="200" rx="36" fill="#f0f0f1"/>
+  <defs><linearGradient id="frame" x1="40" y1="30" x2="175" y2="170" gradientUnits="userSpaceOnUse"><stop stop-color="#ff7a45"/><stop offset="1" stop-color="#0f7ac9"/></linearGradient></defs>
+  <rect x="44" y="35" width="130" height="130" rx="30" fill="url(#frame)"/>
+  <rect x="56" y="47" width="106" height="106" rx="18" fill="#fff"/>
+  <path d="M56 65a18 18 0 0 1 18-18h70a18 18 0 0 1 18 18v14H56Z" fill="#071c4d"/>
+  <circle cx="72" cy="63" r="3" fill="#ffd3c2"/><circle cx="83" cy="63" r="3" fill="#ffe7a6"/><circle cx="94" cy="63" r="3" fill="#87e6c1"/>
+  <path d="m85 97-13 15 13 15m48-30 13 15-13 15m-18-34-13 38" stroke="#0f7ac9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="210" y="117" fill="#071c4d" font-family="Verdana, Arial, sans-serif" font-size="34" font-weight="700">ARMember BonoAPI</text>
+</svg>

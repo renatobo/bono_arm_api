@@ -7,7 +7,7 @@
 
 WordPress plugin that exposes protected REST API endpoints for ARMember payment logs, admin-triggered member activation, and guarded member deletion.
 
-Current version: `2.3.0-beta.3`
+Current version: `2.3.0-beta.4`
 
 ## Quick start
 

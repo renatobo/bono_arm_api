@@ -247,13 +247,13 @@ final class Payment_Repository {
 	 * The answer is cached like tables_exist(), because it only changes when an operator alters
 	 * the table.
 	 */
-	public function invoice_index_exists() {
+	public function invoice_index_exists( $refresh = false ) {
 		global $wpdb;
 
 		$cache_key = 'bono_arm_api_invoice_index_' . get_current_blog_id();
 		$cached    = get_transient( $cache_key );
 
-		if ( is_array( $cached ) && isset( $cached['exists'] ) ) {
+		if ( ! $refresh && is_array( $cached ) && isset( $cached['exists'] ) ) {
 			return (bool) $cached['exists'];
 		}
 

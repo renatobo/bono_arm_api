@@ -1,38 +1,146 @@
+/* Settings chrome shared with the WPBono plugin family; scoped to this screen. */
 .bono-arm-api-admin {
-	max-width: 1100px;
+	max-width: 1120px;
+	margin-top: 18px;
 }
 
+.bono-arm-api-hero {
+	width: fit-content;
+	max-width: 750px;
+	margin: 0 0 16px;
+	border: 1px solid #c8ccd0;
+	background: #f6f7f7;
+}
+
+.bono-arm-api-hero-image {
+	display: block;
+	width: min(100%, 750px);
+	height: auto;
+}
+
+.bono-arm-api-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 16px 0 22px;
+}
+
+.bono-arm-api-meta a,
+.bono-arm-api-meta span {
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	padding: 0 14px;
+	border: 1px solid #c3c4c7;
+	background: #f6f7f7;
+	color: #0f172a;
+	text-decoration: none;
+}
+
+.bono-arm-api-meta a:hover {
+	border-color: #2271b1;
+	color: #135e96;
+	background: #fff;
+}
+
+.bono-arm-api-headline {
+	margin: 8px 0 20px;
+}
+
+.bono-arm-api-headline h1 {
+	margin: 0 0 8px;
+	font-size: 42px;
+	font-weight: 400;
+	line-height: 1.1;
+	color: #0f172a;
+}
+
+.bono-arm-api-headline p,
 .bono-arm-api-admin > .description {
-	max-width: 72ch;
-	margin-bottom: 1rem;
+	max-width: 76ch;
+	font-size: 14px;
+	line-height: 1.65;
+	color: #475569;
 }
 
-.bono-arm-api-admin form,
+.bono-arm-api-features,
 .bono-arm-api-card {
-	max-width: 960px;
-	margin-top: 1rem;
-	padding: 1rem 1.25rem;
+	box-sizing: border-box;
+	margin-block: 18px;
+	padding: 22px;
 	border: 1px solid #c3c4c7;
 	background: #fff;
 }
 
-.bono-arm-api-card code {
+.bono-arm-api-features {
+	border-inline-start: 4px solid #72aee6;
+	background: #f6f7f7;
+}
+
+.bono-arm-api-admin h2 {
+	margin-top: 0;
+	color: #0f172a;
+}
+
+.bono-arm-api-features .form-table {
+	margin-block: 18px;
+	border: 1px solid #dcdcde;
+	background: #fff;
+}
+
+.bono-arm-api-features .form-table th,
+.bono-arm-api-features .form-table td {
+	padding: 18px;
+	border-bottom: 1px solid #dcdcde;
+	vertical-align: middle;
+}
+
+.bono-arm-api-features .form-table th {
+	width: 70%;
+}
+
+.bono-arm-api-features .submit {
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+.bono-arm-api-table {
+	overflow-x: auto;
+}
+
+.bono-arm-api-table table {
+	min-width: 640px;
+}
+
+.bono-arm-api-admin code {
 	word-break: break-word;
 }
 
 .bono-arm-api-copy {
-	margin-left: 0.35rem !important;
+	margin-inline-start: 0.35rem !important;
 }
 
-.bono-arm-api-copy:focus-visible {
-	outline: 2px solid currentColor;
+.bono-arm-api-copy:focus-visible,
+.bono-arm-api-meta a:focus-visible,
+.bono-arm-api-table:focus-visible {
+	outline: 2px solid #2271b1;
 	outline-offset: 2px;
 }
 
 @media screen and (max-width: 782px) {
-	.bono-arm-api-admin form,
+	.bono-arm-api-headline h1 {
+		font-size: 34px;
+	}
+
+	.bono-arm-api-features,
 	.bono-arm-api-card {
-		padding: 0.75rem;
+		padding: 16px;
+	}
+
+	.bono-arm-api-features .form-table th {
+		width: auto;
+		border-bottom: 0;
+		padding-bottom: 4px;
 	}
 
 	.bono-arm-api-copy {

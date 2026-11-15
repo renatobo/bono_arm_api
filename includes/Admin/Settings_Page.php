@@ -23,8 +23,8 @@ final class Settings_Page {
 
 	public function add_page() {
 		add_options_page(
-			__( 'Bono API for ARMember', 'bono-arm-api' ),
-			__( 'Bono API', 'bono-arm-api' ),
+			__( 'ARMember BonoAPI', 'bono-arm-api' ),
+			__( 'ARMember BonoAPI', 'bono-arm-api' ),
 			'manage_options',
 			BONO_ARM_API_SETTINGS_PAGE,
 			array( $this, 'render' )
@@ -110,8 +110,19 @@ final class Settings_Page {
 		$tables_exist = $this->repository->tables_exist();
 		?>
 		<div class="wrap bono-arm-api-admin">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<div class="bono-arm-api-hero">
+				<img src="<?php echo esc_url( BONO_ARM_API_URL . 'assets/settings-banner.svg' ); ?>" class="bono-arm-api-hero-image" width="750" height="200" alt="">
+			</div>
+			<div class="bono-arm-api-meta">
+				<a href="https://github.com/renatobo/bono_arm_api"><?php esc_html_e( 'GitHub Repository', 'bono-arm-api' ); ?></a>
+				<span><?php /* translators: %s: Plugin version. */ echo esc_html( sprintf( __( 'Version %s', 'bono-arm-api' ), BONO_ARM_API_VERSION ) ); ?></span>
+				<a href="https://github.com/renatobo/bono_arm_api/releases"><?php esc_html_e( 'Release notes', 'bono-arm-api' ); ?></a>
+				<a href="https://github.com/afragen/git-updater"><?php esc_html_e( 'GitHub updates via Git Updater', 'bono-arm-api' ); ?></a>
+			</div>
+			<div class="bono-arm-api-headline">
+				<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<p class="description"><?php esc_html_e( 'Capability-controlled ARMember REST endpoints with stable v1 compatibility and a schema-first v2 API.', 'bono-arm-api' ); ?></p>
+			</div>
 
 			<?php // Settings errors are printed by core's options-head.php for pages under the Settings menu. ?>
 			<div class="notice inline <?php echo $tables_exist ? 'notice-success' : 'notice-warning'; ?>">
@@ -124,7 +135,7 @@ final class Settings_Page {
 				</p>
 			</div>
 
-			<?php if ( $tables_exist && ! $this->repository->invoice_index_exists() ) : ?>
+			<?php if ( $tables_exist && ! $this->repository->invoice_index_exists( true ) ) : ?>
 				<?php $index_sql_id = 'bono-arm-api-index-sql'; ?>
 				<div class="notice inline notice-info">
 					<p><?php esc_html_e( 'ARMember does not index invoice IDs, so every payments request scans the whole payment log. On large logs, ask your database administrator to add this index. ARMember upgrades keep it.', 'bono-arm-api' ); ?></p>
@@ -135,7 +146,7 @@ final class Settings_Page {
 				</div>
 			<?php endif; ?>
 
-			<form action="options.php" method="post">
+			<form action="options.php" method="post" class="bono-arm-api-features">
 				<?php
 				settings_fields( 'bono_arm_api_settings' );
 				do_settings_sections( BONO_ARM_API_SETTINGS_PAGE );
@@ -145,8 +156,9 @@ final class Settings_Page {
 
 			<section class="bono-arm-api-card" aria-labelledby="bono-arm-api-endpoints">
 				<h2 id="bono-arm-api-endpoints"><?php esc_html_e( 'Endpoints', 'bono-arm-api' ); ?></h2>
+				<div class="bono-arm-api-table" role="region" aria-labelledby="bono-arm-api-endpoints" tabindex="0">
 				<table class="widefat striped">
-					<thead><tr><th><?php esc_html_e( 'API', 'bono-arm-api' ); ?></th><th><?php esc_html_e( 'Route', 'bono-arm-api' ); ?></th><th><?php esc_html_e( 'Capability', 'bono-arm-api' ); ?></th></tr></thead>
+					<thead><tr><th scope="col"><?php esc_html_e( 'API', 'bono-arm-api' ); ?></th><th scope="col"><?php esc_html_e( 'Route', 'bono-arm-api' ); ?></th><th scope="col"><?php esc_html_e( 'Capability', 'bono-arm-api' ); ?></th></tr></thead>
 					<tbody>
 						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/arm_payments_log', Capabilities::READ_PAYMENTS ); ?>
 						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/members/{user_id}/activate', Capabilities::ACTIVATE_MEMBERS ); ?>
@@ -161,6 +173,7 @@ final class Settings_Page {
 						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}', Capabilities::DELETE_MEMBERS ); ?>
 					</tbody>
 				</table>
+				</div>
 			</section>
 			<p class="description">
 				<?php
