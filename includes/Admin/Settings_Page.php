@@ -33,6 +33,8 @@ final class Settings_Page {
 
 	public function register_settings() {
 		$settings = array(
+			BONO_ARM_API_OPTION_ENABLE_BADGES            => __( 'Badge endpoints', 'bono-arm-api' ),
+			BONO_ARM_API_OPTION_ENABLE_MEMBER_RENEWALS   => __( 'Sponsored renewal endpoints (also requires member activation)', 'bono-arm-api' ),
 			BONO_ARM_API_OPTION_ENABLE_TRANSACTIONS      => __( 'Payment endpoints', 'bono-arm-api' ),
 			BONO_ARM_API_OPTION_ENABLE_MEMBER_ACTIVATION => __( 'Member activation endpoints', 'bono-arm-api' ),
 			BONO_ARM_API_OPTION_ENABLE_MEMBER_DELETE     => __( 'Member deletion endpoints', 'bono-arm-api' ),
@@ -149,6 +151,11 @@ final class Settings_Page {
 						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/arm_payments_log', Capabilities::READ_PAYMENTS ); ?>
 						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/members/{user_id}/activate', Capabilities::ACTIVATE_MEMBERS ); ?>
 						<?php $this->endpoint_row( 'v1', $base_url . BONO_ARM_API_NAMESPACE . '/members/{user_id}/delete', Capabilities::DELETE_MEMBERS ); ?>
+						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}/renewals', Capabilities::RENEW_MEMBERS . ' + ' . Capabilities::ACTIVATE_MEMBERS ); ?>
+						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/renewals/{operation_id}', Capabilities::RENEW_MEMBERS . ' + ' . Capabilities::ACTIVATE_MEMBERS ); ?>
+						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/badges', Capabilities::MANAGE_BADGES ); ?>
+						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}/badges', Capabilities::MANAGE_BADGES ); ?>
+						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}/badges/{badge_id}', Capabilities::MANAGE_BADGES ); ?>
 						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/payments', Capabilities::READ_PAYMENTS ); ?>
 						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}/activate', Capabilities::ACTIVATE_MEMBERS ); ?>
 						<?php $this->endpoint_row( 'v2', $base_url . BONO_ARM_API_V2_NAMESPACE . '/members/{user_id}', Capabilities::DELETE_MEMBERS ); ?>

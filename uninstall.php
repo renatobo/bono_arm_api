@@ -53,6 +53,10 @@ if ( bono_arm_api_sibling_copy_is_active() ) {
  */
 function bono_arm_api_uninstall_site() {
 	delete_option( 'bono_arm_api_enable_transactions' );
+	delete_option( 'bono_arm_api_enable_member_renewals' );
+	delete_option( 'bono_arm_api_enable_badges' );
+	// Retain the renewal journal and its schema marker: deleting reservations could allow
+	// a reinstalled plugin to settle the same external payment/cycle again.
 	delete_option( 'bono_arm_api_enable_member_activation' );
 	delete_option( 'bono_arm_api_enable_member_delete' );
 	delete_option( 'bono_arm_api_schema_version' );
@@ -64,6 +68,8 @@ function bono_arm_api_uninstall_site() {
 	// directly to individual users are left in place: sweeping every user does not scale.
 	$capabilities = array(
 		'bono_arm_api_read_payments',
+		'bono_arm_api_renew_members',
+		'bono_arm_api_manage_badges',
 		'bono_arm_api_activate_members',
 		'bono_arm_api_delete_members',
 		'bono_arm_api_read_payer_details',

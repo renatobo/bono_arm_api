@@ -12,7 +12,7 @@ final class Privacy {
 		}
 
 		$content  = '<p>' . esc_html__( 'Bono API for ARMember adds authenticated REST API endpoints for ARMember payment and member administration data. Depending on the endpoint and requested context, responses can include WordPress usernames, email addresses, payment identifiers, payment amounts, dates, and administrative notes.', 'bono-arm-api' ) . '</p>';
-		$content .= '<p>' . esc_html__( 'The plugin stores only its feature-toggle settings and a capability-schema version. It does not send data to a third party and does not create its own request log. Site operators are responsible for documenting retention, access, and onward processing performed by clients that consume the API.', 'bono-arm-api' ) . '</p>';
+		$content .= '<p>' . esc_html__( 'The plugin stores settings, capability grant history, and a durable sponsored-renewal journal containing operator and member IDs, sponsor payment details, cycle state, and write outcomes. Renewal reservations are retained across uninstall to prevent duplicate settlement after reinstall. It does not send data to a third party. Site operators are responsible for journal access, reconciliation, retention, and onward processing performed by API clients.', 'bono-arm-api' ) . '</p>';
 
 		wp_add_privacy_policy_content(
 			esc_html__( 'Bono API for ARMember', 'bono-arm-api' ),

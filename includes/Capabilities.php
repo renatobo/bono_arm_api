@@ -6,6 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Capabilities {
+	const MANAGE_BADGES      = 'bono_arm_api_manage_badges';
+	const RENEW_MEMBERS      = 'bono_arm_api_renew_members';
 	const READ_PAYMENTS      = 'bono_arm_api_read_payments';
 	const ACTIVATE_MEMBERS   = 'bono_arm_api_activate_members';
 	const DELETE_MEMBERS     = 'bono_arm_api_delete_members';
@@ -27,6 +29,8 @@ final class Capabilities {
 			self::ACTIVATE_MEMBERS,
 			self::DELETE_MEMBERS,
 			self::READ_PAYER_DETAILS,
+			self::RENEW_MEMBERS,
+			self::MANAGE_BADGES,
 		);
 	}
 
@@ -58,7 +62,7 @@ final class Capabilities {
 
 		$schema_version = get_option( BONO_ARM_API_OPTION_SCHEMA_VERSION );
 
-		if ( BONO_ARM_API_VERSION === $schema_version ) {
+		if ( BONO_ARM_API_VERSION === $schema_version && ! array_diff( self::all(), (array) get_option( BONO_ARM_API_OPTION_CAPS_GRANTED, array() ) ) ) {
 			return;
 		}
 

@@ -39,6 +39,7 @@ rsync -a \
   --exclude '.github/' \
   --exclude '.claude/' \
   --exclude '.DS_Store' \
+  --exclude '.phpunit.result.cache' \
   --exclude '/.env' \
   --exclude '/.env.*' \
   --exclude '/dist' \

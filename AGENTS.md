@@ -36,9 +36,15 @@ Guidance for coding agents and contributors working in this repository.
 - Endpoint: `POST /wp-json/bono_armember/v1/members/{user_id}/delete`
 - The delete route currently supports single-site installs only.
 - Prefer ARMember's safer pre-delete and post-delete cleanup flow around `wp_delete_user()` instead of mirroring the current UI delete path literally.
-- Access is restricted to administrator users.
+- Access uses the existing operation capabilities, granted to administrators by default.
+- Sponsored renewal: `POST /wp-json/bono_armember/v2/members/{user_id}/renewals`; status: `GET /wp-json/bono_armember/v2/renewals/{operation_id}`.
+- Renewal requires renewal and activation capabilities/toggles; it supports the inspected Pro 8.1.1 manual recurring flow only.
+- Preserve durable renewal journal reservations across uninstall/reinstall and never automatically replay an uncertain write.
 - API availability is controlled by plugin setting `bono_arm_api_enable_transactions`.
 - Member activation API availability is controlled by plugin setting `bono_arm_api_enable_member_activation`.
+
+- Badge API: `GET /wp-json/bono_armember/v2/badges`, `GET /wp-json/bono_armember/v2/members/{user_id}/badges`, and `PUT`/`DELETE /wp-json/bono_armember/v2/members/{user_id}/badges/{badge_id}`.
+- Badge endpoints require `bono_arm_api_manage_badges` and disabled-by-default `bono_arm_api_enable_badges`. Mutations are idempotent; remove all target awards while preserving other badges and definitions. Automatic rules may award removed badges again.
 
 ## Release Notes
 
@@ -66,6 +72,6 @@ If publication fails, manually dispatch **Release merged PR** from `main` with `
 
 Tags and publication happen in one workflow, avoiding the `GITHUB_TOKEN` tag-event suppression. No PAT or additional secret is required. Only publishing has `contents: write` plus OIDC/attestation permissions; quality jobs retain their own minimum analysis permissions.
 
-Release configuration is `.github/release.json`; guard code is `.github/scripts/release.py`; tests run with `python3 -B -m unittest discover -s .github/tests -v`. Package locally with `bash build.sh`, then run `python3 -B .github/scripts/release.py package`. Release ZIPs exclude this tooling and agent guides. Do not hand-edit the upload/download handoff to rebuild a different artifact in the publishing job.
+Release configuration is `.github/release.json`; guard code is `.github/scripts/release.py`; tests run with `python3 -B -m unittest discover -s .github/tests -v`. Package locally with `bash build.sh`, then run `python3 -B .github/scripts/release.py package`. Release ZIPs exclude this tooling, test caches, and agent guides. Do not hand-edit the upload/download handoff to rebuild a different artifact in the publishing job.
 
 For workflow-only maintenance, keep the plugin version unchanged and omit the `release` label. Merge setup/automation PRs unlabelled; the next labelled version PR uses the new flow.

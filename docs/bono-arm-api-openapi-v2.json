@@ -3,7 +3,7 @@
   "info": {
     "title": "Bono API for ARMember v2",
     "description": "Schema-first ARMember endpoints. Payment items follow the registered REST item schema, discoverable via OPTIONS on the payments route. Errors use the standard WordPress REST error shape.",
-    "version": "2.2.0"
+    "version": "2.3.0-beta.3"
   },
   "servers": [
     {
@@ -238,6 +238,404 @@
           }
         }
       }
+    },
+    "/bono_armember/v2/members/{user_id}/renewals": {
+      "post": {
+        "summary": "Preview or commit one sponsored natural renewal cycle",
+        "description": "Requires bono_arm_api_renew_members AND bono_arm_api_activate_members, and both renewal/activation toggles. Supports inspected Pro 8.1.1 paid recurring manual subscriptions. Defaults to preview. First commit requires expected_state and Idempotency-Key. All responses use no-store. 409 in-progress includes Retry-After: 5. A partial/uncertain write returns 503 bono_arm_api_renewal_needs_reconciliation with operation_id; never retry with a new key. No card charge or ARMember delivery emails. Unsupported subscription errors include data.reason; suspension_reason_unverified requires explicit operator confirmation before a fresh preview. Malformed schedule fields identify data.field.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{16,128}$"
+            },
+            "description": "Required for commits; same key with another command returns 409."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewalCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "409": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "422": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "200": {
+            "description": "Side-effect-free preview, or authorized completed replay (idempotent_replay=true).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenewalResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Verified completed renewal; exactly one cycle and one created/reused payment.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Operation status URL."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenewalResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bono_armember/v2/renewals/{operation_id}": {
+      "get": {
+        "summary": "Read durable renewal state and reconciliation details",
+        "description": "Requires both renewal and activation capabilities, including on replay. Remains readable when mutation toggles are disabled for recovery. All responses have Cache-Control: no-store. Journal states: in_progress, completed, failed_no_change, needs_reconciliation. In-progress after a timeout may indicate an interrupted write: inspect before repair.",
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "200": {
+            "description": "Durable journal record, containing result or step outcomes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "operation_id",
+                    "state",
+                    "user_id",
+                    "plan_id",
+                    "actor_id",
+                    "details"
+                  ],
+                  "properties": {
+                    "operation_id": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "failed_no_change",
+                        "needs_reconciliation"
+                      ]
+                    },
+                    "user_id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "plan_id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "actor_id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bono_armember/v2/badges": {
+      "get": {
+        "summary": "List available badge definitions",
+        "description": "Requires bono_arm_api_manage_badges and enabled Badge endpoints setting. Inspected ARMember Pro 8.1.1 badge support. No request body. Removal preserves other badges and definitions; automatic rules may award it again. User list reports stored assignments, not current display eligibility. Multisite target must belong to this site. Avoid concurrent native admin/cron edits.",
+        "parameters": [],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "409": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "200": {
+            "description": "Successful response. changed=false when already in the requested state.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgeList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bono_armember/v2/members/{user_id}/badges": {
+      "get": {
+        "summary": "List stored badges assigned to a user",
+        "description": "Requires bono_arm_api_manage_badges and enabled Badge endpoints setting. Inspected ARMember Pro 8.1.1 badge support. No request body. Removal preserves other badges and definitions; automatic rules may award it again. User list reports stored assignments, not current display eligibility. Multisite target must belong to this site. Avoid concurrent native admin/cron edits.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "409": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "200": {
+            "description": "Successful response. changed=false when already in the requested state.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgeList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bono_armember/v2/members/{user_id}/badges/{badge_id}": {
+      "put": {
+        "summary": "Assign an existing badge idempotently",
+        "description": "Requires bono_arm_api_manage_badges and enabled Badge endpoints setting. Inspected ARMember Pro 8.1.1 badge support. No request body. Removal preserves other badges and definitions; automatic rules may award it again. User list reports stored assignments, not current display eligibility. Multisite target must belong to this site. Avoid concurrent native admin/cron edits.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "badge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "409": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "200": {
+            "description": "Successful response. changed=false when already in the requested state.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgeMutation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove all target badge awards from a user idempotently",
+        "description": "Requires bono_arm_api_manage_badges and enabled Badge endpoints setting. Inspected ARMember Pro 8.1.1 badge support. No request body. Removal preserves other badges and definitions; automatic rules may award it again. User list reports stored assignments, not current display eligibility. Multisite target must belong to this site. Avoid concurrent native admin/cron edits.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "badge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "403": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "409": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RestError"
+          },
+          "200": {
+            "description": "Successful response. changed=false when already in the requested state.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgeMutation"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -420,6 +818,285 @@
                 "type": "integer"
               }
             }
+          }
+        }
+      },
+      "RenewalCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "plan_id",
+          "payment"
+        ],
+        "properties": {
+          "plan_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": true
+          },
+          "expected_state": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Preview token, bound to the actor, command and state; required on first commit, expires after 15 minutes."
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode",
+                  "reference",
+                  "sponsor_name",
+                  "amount",
+                  "currency",
+                  "paid_at"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "create"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 191,
+                    "pattern": "^[^\\x00-\\x20\\x7f]+$"
+                  },
+                  "sponsor_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,6})?$",
+                    "description": "Positive exact decimal total, matching the selected stored cycle including tax."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "paid_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Actual received-payment timestamp with an explicit timezone offset."
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode",
+                  "payment_log_id"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "existing"
+                  },
+                  "payment_log_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "description": "Successful manual payment for this member/plan/total/currency. Its structured purpose must identify sponsor_name, start_plan and completed_cycles; see the sponsored renewal guide."
+              }
+            ]
+          },
+          "suspension_reason": {
+            "type": "string",
+            "enum": [
+              "nonpayment"
+            ],
+            "description": "Operator-confirmed cause of an overdue target plan suspension when historical payment evidence is ambiguous. Include unchanged in preview, commit and retries. Does not override unrelated restrictions."
+          }
+        }
+      },
+      "RenewalState": {
+        "type": "object",
+        "required": [
+          "primary_status",
+          "secondary_status",
+          "completed_cycles",
+          "next_due_at"
+        ],
+        "properties": {
+          "primary_status": {
+            "type": "integer"
+          },
+          "secondary_status": {
+            "type": "integer"
+          },
+          "completed_cycles": {
+            "type": "integer"
+          },
+          "next_due_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Real finite agreement expiry, when present."
+          },
+          "entitlement_active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RenewalPayment": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "create",
+              "existing"
+            ]
+          },
+          "created": {
+            "type": "boolean"
+          },
+          "will_create": {
+            "type": "boolean"
+          },
+          "payment_log_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "invoice_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reference": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "RenewalResult": {
+        "type": "object",
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "can_execute": {
+            "type": "boolean"
+          },
+          "expected_state": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Preview-token expiry."
+          },
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "const": "completed"
+          },
+          "idempotent_replay": {
+            "type": "boolean"
+          },
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "plan_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cycles_to_advance": {
+            "const": 1
+          },
+          "cycles_advanced": {
+            "const": 1
+          },
+          "before": {
+            "$ref": "#/components/schemas/RenewalState"
+          },
+          "after": {
+            "$ref": "#/components/schemas/RenewalState"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/RenewalPayment"
+          },
+          "notifications": {
+            "type": "object",
+            "properties": {
+              "policy": {
+                "const": "suppressed"
+              }
+            }
+          }
+        }
+      },
+      "Badge": {
+        "type": "object",
+        "required": [
+          "badge_id",
+          "name",
+          "icon"
+        ],
+        "properties": {
+          "badge_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          }
+        }
+      },
+      "BadgeList": {
+        "type": "object",
+        "required": [
+          "badges"
+        ],
+        "properties": {
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Badge"
+            }
+          }
+        }
+      },
+      "BadgeMutation": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "badge_id",
+          "assigned",
+          "changed"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer"
+          },
+          "badge_id": {
+            "type": "integer"
+          },
+          "assigned": {
+            "type": "boolean"
+          },
+          "changed": {
+            "type": "boolean"
           }
         }
       }
