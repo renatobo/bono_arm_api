@@ -90,6 +90,23 @@ final class RenewalsTest extends WP_UnitTestCase {
 		parent::tear_down();
 	}
 
+	public function test_activation_toggle_alone_disables_renewal() {
+		update_option( BONO_ARM_API_OPTION_ENABLE_MEMBER_ACTIVATION, false );
+		$this->assertSame( 503, $this->request()->get_status() );
+	}
+
+	public function test_unauthenticated_renewal_is_rejected() {
+		wp_set_current_user( 0 );
+		$this->assertSame( 401, $this->request()->get_status() );
+	}
+
+	public function test_unknown_status_does_not_install_schema() {
+		delete_option( 'bono_arm_api_renewals_schema' );
+		$request = new WP_REST_Request( 'GET', '/bono_armember/v2/renewals/' . wp_generate_uuid4() );
+		$this->assertSame( 404, rest_do_request( $request )->get_status() );
+		$this->assertFalse( get_option( 'bono_arm_api_renewals_schema' ) );
+	}
+
 	private function request( $body = null, $key = 'test-idempotency-key-1' ) {
 		$request = new WP_REST_Request( 'POST', '/bono_armember/v2/members/' . $this->member . '/renewals' );
 		$request->set_header( 'Content-Type', 'application/json' );

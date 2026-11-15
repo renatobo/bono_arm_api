@@ -26,7 +26,7 @@ final class Service {
 		if ( ! $dry_run ) {
 			$existing = $this->repository->find_key( $key );
 			if ( $existing ) {
-				return $this->replay( $existing, $hash );
+				return $this->replay( $existing, $hash, true );
 			}
 		}
 
@@ -152,7 +152,10 @@ final class Service {
 				return $result;
 			} catch ( \Throwable $exception ) {
 				// Keep errors bounded and omit third-party exception text, which can contain secrets.
-				$payload['failure'] = 'Verification or write failed. Inspect recorded steps before any repair.';
+				$payload['failure'] = array(
+					'exception_class' => get_class( $exception ),
+					'stage'           => 'verification_or_write',
+				);
 				$this->repository->save( $id, 'needs_reconciliation', $payload );
 				clean_user_cache( $user_id );
 				return $this->error( 'renewal_needs_reconciliation', 503, $id, $payload['steps'] );
@@ -163,10 +166,7 @@ final class Service {
 	}
 
 	public function status( $id ) {
-		if ( ! $this->repository->install() ) {
-			return $this->error( 'armember_unavailable', 503 );
-		}
-		$row = $this->repository->get( $id );
+		$row = '1' === get_option( 'bono_arm_api_renewals_schema' ) ? $this->repository->get( $id ) : null;
 		if ( ! $row ) {
 			return new WP_Error( 'bono_arm_api_operation_not_found', __( 'Renewal operation not found.', 'bono-arm-api' ), array( 'status' => 404 ) );
 		}
@@ -182,9 +182,20 @@ final class Service {
 		);
 	}
 
-	private function replay( $row, $hash ) {
+	private function replay( $row, $hash, $check_lock = false ) {
 		if ( ! hash_equals( $row['command_hash'], $hash ) ) {
 			return $this->error( 'idempotency_conflict', 409, $row['operation_id'] );
+		}
+		if ( $check_lock && 'in_progress' === $row['state'] ) {
+			$lock = $this->repository->lock( 'member:' . $row['user_id'] );
+			if ( ! $lock ) {
+				return $this->error( 'renewal_in_progress', 409, $row['operation_id'] );
+			}
+			try {
+				return $this->replay( $this->repository->get( $row['operation_id'] ), $hash );
+			} finally {
+				$this->repository->unlock( $lock );
+			}
 		}
 		if ( 'completed' !== $row['state'] ) {
 			return $this->error( 'renewal_needs_reconciliation', 503, $row['operation_id'], $row['payload']['steps'] );

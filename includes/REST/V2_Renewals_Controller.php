@@ -185,7 +185,7 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 		$response = new WP_REST_Response( $result, $dry_run || $result['idempotent_replay'] ? 200 : 201 );
 		$response->header( 'Cache-Control', 'no-store' );
 		if ( ! $dry_run ) {
-			$response->header( 'Location', '/wp-json/' . $this->namespace . '/renewals/' . $result['operation_id'] );
+			$response->header( 'Location', rest_url( $this->namespace . '/renewals/' . $result['operation_id'] ) );
 		}
 		return $response;
 	}

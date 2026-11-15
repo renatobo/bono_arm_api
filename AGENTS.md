@@ -4,7 +4,7 @@ Guidance for coding agents and contributors working in this repository.
 
 ## Project Scope
 
-- Project type: WordPress plugin
+- Project type: WordPress plugin providing a capability-gated REST API over ARMember payment and member data
 - Main plugin file: `bono-arm-api.php`
 - Plugin readme for WordPress packaging: `readme.txt`
 - GitHub/project readme: `README.md`
@@ -75,3 +75,69 @@ Tags and publication happen in one workflow, avoiding the `GITHUB_TOKEN` tag-eve
 Release configuration is `.github/release.json`; guard code is `.github/scripts/release.py`; tests run with `python3 -B -m unittest discover -s .github/tests -v`. Package locally with `bash build.sh`, then run `python3 -B .github/scripts/release.py package`. Release ZIPs exclude this tooling, test caches, and agent guides. Do not hand-edit the upload/download handoff to rebuild a different artifact in the publishing job.
 
 For workflow-only maintenance, keep the plugin version unchanged and omit the `release` label. Merge setup/automation PRs unlabelled; the next labelled version PR uses the new flow.
+
+## Commands
+
+```bash
+composer check      # lint + phpcs + phpunit
+composer phpcs      # WordPress Coding Standards (see gotcha below)
+vendor/bin/phpcbf   # auto-fix
+./build.sh          # release zip -> bono_arm_api-<version>.zip, folder bono-arm-api/
+```
+
+PHPUnit needs the WP test library and will fail locally without it:
+`WP_TESTS_DIR=/tmp/wordpress-tests-lib vendor/bin/phpunit`. CI is the real gate
+(`.github/workflows/quality.yml`: phpcs, PHP 7.4-8.5 lint, WP 6.9 + 7.1 integration,
+official Plugin Check). It triggers on pull requests and pushes to `main`/`wp7` only, so a
+branch push alone runs nothing: open the PR to get CI.
+
+## Architecture
+
+`bono-arm-api.php` defines constants, registers an autoloader mapping `BonoArmApi\` to
+`includes/`, and boots `Plugin::instance()`. No Composer autoload for plugin classes.
+
+- `includes/REST/` — `V1_Controller` (legacy envelope, frozen), `V2_*` (schema-first)
+- `includes/ARMember/` — ARMember integration gateways, including renewal settlement
+- `includes/Infrastructure/` — payment and renewal repositories own database access
+- `includes/Admin/Settings_Page.php` — the single admin screen
+
+## Gotchas
+
+- **Read phpcs output in full.** `--report=summary | tail -N` hides the findings table.
+- **SQL is linted; keep it that way.** `phpcs.xml.dist` no longer excludes the
+  `WordPress.DB.*` sniffs. `Payment_Repository` suppresses them in narrow
+  `phpcs:disable`/`enable` blocks with justifications. Table names use `%i` identifier
+  placeholders and `where_clause()` returns unresolved `%d` placeholders plus their values,
+  so every statement is prepared exactly once. Do not reintroduce a pre-prepared fragment.
+- **WP floor is 6.9**, set by the Abilities API registration; `wp_unique_id()` in the
+  settings page needs 6.8. CI no longer suppresses
+  `wp_function_not_compatible_with_requires_wp`, and Plugin Check does not reason about
+  `function_exists()` guards, so any newer core API forces the floor up.
+- **Never rename the packaged folder.** It is `bono-arm-api/`; the zip filename uses the repo
+  dir (`bono_arm_api`). That mismatch is intentional, do not "fix" it. The folder is the
+  upgrade key: 2.0.2 renamed it and Git Updater installed a second plugin beside the first
+  instead of upgrading it.
+- **Two installed copies share all stored data.** Options, capabilities, and transients are
+  keyed by name, not directory. `uninstall.php` bails when a sibling copy is active; keep that
+  guard. It is unreachable from PHPUnit, so test changes to it against stubbed WP functions.
+- **Version checks use the release configuration.** `.github/scripts/release.py` reads
+  the API spec fields configured in `.github/release.json`. The retired `release.sh`
+  used literal `sed` and required a particular JSON key order and indentation; those
+  formatting constraints no longer apply. Keep configured version values synchronized.
+- **Plugin Check runs its own ruleset**, ignoring `phpcs.xml.dist` excludes, and rewrites a
+  single PR comment with the report. Local phpcs clean does not mean Plugin Check clean.
+- **`load_plugin_textdomain()` is deliberate**, warning suppression included: Git Updater
+  installs get no language packs, so removing it breaks translations on the primary channel.
+- **The settings page is under Settings**, so core's `options-head.php` already calls
+  `settings_errors()`. Do not call it again — notices print twice.
+- **Feature toggles fail closed.** Every endpoint checks its `bono_arm_api_enable_*`
+  option and returns 503 when off. Tests must set the option. Exception: renewal status
+  remains readable with both renewal and activation capabilities while mutations are disabled,
+  so operators can investigate interrupted writes. Status never installs the journal schema.
+
+## Translations
+
+Regenerate after changing any translatable string (line references drift):
+`wp i18n make-pot . languages/bono-arm-api.pot`
+WP-CLI is not installed locally; run it wherever `wp` is available, or hand-verify with
+`msgfmt --check`. Header metadata (Plugin Name, Description, Author) belongs in the POT too.
