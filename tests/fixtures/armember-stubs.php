@@ -10,6 +10,9 @@
 if ( ! function_exists( 'arm_set_member_status' ) ) {
 	function arm_set_member_status( $user_id, $primary_status = 1, $secondary_status = 0 ) {
 		global $wpdb;
+		if ( ! empty( $GLOBALS['bono_renew_native_activation_enabled'] ) && function_exists( 'bono_renew_native_activation' ) ) {
+			return bono_renew_native_activation( $user_id, $primary_status, $secondary_status );
+		}
 
 		$wpdb->update(
 			$wpdb->prefix . 'arm_members',

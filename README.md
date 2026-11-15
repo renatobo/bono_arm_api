@@ -7,7 +7,7 @@
 
 WordPress plugin that exposes protected REST API endpoints for ARMember payment logs, admin-triggered member activation, and guarded member deletion.
 
-Current version: `2.2.0`
+Current version: `2.3.0`
 
 ## Quick start
 
@@ -351,3 +351,154 @@ Install Git Updater to receive update notifications and one-click updates from t
 ## License
 
 Licensed under [GPL-2.0-or-later](https://www.gnu.org/licenses/gpl-2.0.html).
+
+## Renewal API
+
+`POST /wp-json/bono_armember/v2/members/{user_id}/renewals` previews or commits one
+externally funded natural subscription cycle. It reactivates the account, preserves the original
+billing schedule, and creates exactly one successful manual payment or reuses an explicitly
+identified matching payment. It records money already received; it does not charge the payer.
+
+Enable **Renewal endpoints** and **Member activation endpoints** in Settings. The
+caller needs both `bono_arm_api_renew_members` and `bono_arm_api_activate_members`, using normal
+WordPress authentication. Renewal is disabled by default and currently supports the inspected
+**ARMember Pro 8.1.1** manual recurring subscriptions only; other existing endpoints retain their
+ARMember/Lite compatibility. Automatic debit, paid-finite/lifetime/free plans, cancelled agreements,
+ambiguous restrictions, and payments that cannot restore entitlement in one cycle are rejected.
+
+Send JSON with `plan_id` and `payment`; `dry_run` defaults to `true`. Example preview:
+
+```json
+{
+  "plan_id": 12,
+  "payment": {
+    "mode": "create",
+    "reference": "DNB-2026-member-123",
+    "payer_name": "Ducati Newport Beach",
+    "amount": "30.00",
+    "currency": "USD",
+    "paid_at": "2026-11-13T09:00:00-08:00"
+  }
+}
+```
+
+Use actual site IDs and the exact stored cycle total including tax. Review the projected dates
+and payment, then repeat with `dry_run: false`, the returned `expected_state`, and a unique
+`Idempotency-Key` header (16–128 printable ASCII characters without whitespace). The preview
+expires after 15 minutes and is bound to the authenticated actor, command and relevant state.
+A first completed commit returns 201; a completed replay returns 200 with the same operation and
+payment IDs. Keep the original key and command after a timeout, even after the preview expires.
+
+For an already recorded payment, use `payment: {"mode":"existing","payment_log_id":4567}`.
+The record must be a successful manual subscription payment for the same member, plan, amount
+and currency. Its Add Manual Payment **Note** must be a JSON object identifying the actual
+`payer_name`, the stored `start_plan` timestamp and the projected `completed_cycles` count,
+for example `{"payer_name":"Ducati Newport Beach","start_plan":1759276800,"completed_cycles":2}`.
+Alternatively, an integration may record that object under `bono_renewal` in serialized
+payment extras. Historical payments without explicit cycle purpose are rejected. The API never
+edits or deletes the reused payment; the journal records its association.
+
+`GET /wp-json/bono_armember/v2/renewals/{operation_id}` returns the durable operation and write
+steps with the same capabilities, including when mutation toggles are disabled. All renewal
+responses use `Cache-Control: no-store`. An in-progress lock conflict returns 409 and
+`Retry-After: 5`. Partial or uncertain writes return 503
+`bono_arm_api_renewal_needs_reconciliation`; inspect the operation before repairing it. An
+interrupted `in_progress` operation is also blocked from automatic re-execution. Never attempt
+recovery using another payment/reference or idempotency key.
+
+The journal reserves external references, payment log IDs and member/plan/cycles in SQL, and API
+writes are serialized per member. It intentionally survives plugin uninstall/reinstall to retain
+payment-consumption evidence. Operators must reconcile uncertain operations against ARMember
+before any manual journal repair. No automatic rollback of third-party hooks is claimed. API
+locks do not serialize ARMember's portal, cron or third-party writers; avoid concurrent external
+edits during settlement. The native invoice primitive and bookkeeping hooks are preserved.
+ARMember mailers reached synchronously by the operation are suppressed; unrelated WordPress
+mail remains enabled. Mailchimp, spreadsheets and caller-owned email remain outside this API.
+
+See [the complete contract](docs/renewal-api-spec.md), the updated
+[v2 OpenAPI specification](docs/bono-arm-api-openapi-v2.json), and the Postman preview/commit/status
+examples. Validate installed ARMember hooks and renewal lifecycle in staging before enabling renewal mutations in production.
+
+For a suspended target whose nonpayment cause has been explicitly confirmed by the operator,
+send top-level `"suspension_reason": "nonpayment"` on preview and repeat it unchanged on
+commit/replay. ARMember clears its grace reason after automatic suspension, and a later success
+can hide the failed transaction. Without sufficient stored evidence, the API returns 422
+`bono_arm_api_unsupported_subscription` with `data.reason: "suspension_reason_unverified"`.
+Do not default this confirmation for all members: manual plan suspension can have the same
+stored shape. Confirmation applies only to the target plan with an overdue schedule; it does
+not bypass account restrictions, cancellation, unrelated grace actions or other-plan restrictions.
+The confirmation is bound to the preview and idempotency command and retained in the journal.
+Unsupported-subscription errors now include a machine-readable `data.reason`; malformed schedule
+fields also identify `data.field`, without returning credentials or raw member metadata.
+
+
+## Badge API
+
+Enable **Badge endpoints** in Settings → Bono API. All badge routes require normal WordPress authentication and `bono_arm_api_manage_badges`, granted to administrators by default. The feature is disabled by default and requires ARMember badge support (inspected against Pro 8.1.1).
+
+| Method | Route (under `/wp-json/bono_armember/v2`) | Purpose |
+| --- | --- | --- |
+| GET | `/badges` | List available badge definitions and find VIP’s `badge_id`. |
+| GET | `/members/{user_id}/badges` | List the user’s stored badge assignments. |
+| PUT | `/members/{user_id}/badges/{badge_id}` | Assign an existing badge if absent. |
+| DELETE | `/members/{user_id}/badges/{badge_id}` | Remove all awards of that badge from this user. |
+
+PUT and DELETE need no request body. For example, if VIP has ID 7, use `PUT /wp-json/bono_armember/v2/members/123/badges/7` to assign it and DELETE the same URL to remove it. Both return 200 with `user_id`, `badge_id`, `assigned`, and `changed`. Repeated requests are safe and return `changed: false` when already in the requested state. An existing automatic award also counts as assigned; PUT does not add a duplicate manual award.
+
+List responses contain `badges`, an array of `{ "badge_id": 7, "name": "VIP", "icon": "…" }`. The user list reports stored assignments, including automatic awards whose display may currently be suppressed by ARMember. Removal preserves other badges and the badge definition; automatic rules may award the badge again later. This API does not change membership, roles, payments, or automatic award rules.
+
+Errors use the WordPress REST shape: 400 invalid IDs, 401 unauthenticated, 403 missing capability, 404 missing user/badge (achievement rule IDs are not badge IDs), 409 malformed assignment data or conflicting/failed writes, and 503 disabled feature or unavailable badge support. Responses use `Cache-Control: no-store`. API mutations share the member lock with other Bono member operations; native admin/cron writers do not share it. Avoid concurrent external edits. On multisite, the user must belong to the current site.
+
+## Compatibility review: ARMember 8.0 / Lite 6.2, WordPress 7.1.4
+
+Premium: **Source-compatible; lifecycle regression needed**. Lite: **Source-compatible; lifecycle regression needed**. The API integration suite passes on real WordPress 7.1.4 (24 tests / 68 assertions), using ARMember fixtures. Installed premium/Lite testing remains pending. See [compatibility status and findings](COMPATIBILITY.md) and [local test setup](tests/README.md).
+
+## Renewal reconciliation and privacy
+
+`POST /wp-json/bono_armember/v2/renewals/{operation_id}/resolve` records an
+operator's reconciliation of an interrupted or failed operation. It requires
+`manage_options` plus both renewal and activation capabilities, even when mutation
+toggles are off. Inspect the operation and ARMember payment and subscription state,
+perform any necessary repair, then send JSON:
+
+```json
+{"confirm_reconciled":true,"cycle_stands":true,"payment_stands":true}
+```
+
+The booleans attest to the state after inspection or external repair; this endpoint
+never repairs ARMember or replays writes. It records the operator ID and UTC time,
+and changes the journal state to `resolved`. A live member lock returns 409 with
+`Retry-After: 5`. An identical resolution is idempotent; contradictory resolutions
+and attempts to resolve a completed operation return 409. The old idempotency key
+returns 409 `bono_arm_api_operation_resolved` and cannot execute again.
+
+Payment/reference reservations are always retained, including a payment an operator
+has reversed. If `cycle_stands` is false, only the cycle reservation is released,
+allowing a fresh preview with a new, independently verified payment reference after
+repair. If the payment stands but the cycle does not, repair entitlement externally;
+do not record the same money again under another reference. The endpoint trusts the
+explicit administrator attestation; it is not an automatic reconciliation engine.
+
+Payment is recorded and validated before entitlement is extended. Verification
+failures record the named checkpoint and exception class, never exception messages.
+
+WordPress privacy tools export member journal details and operator audit records.
+Erasure removes personal payloads from completed/resolved member operations and
+removes the requesting operator's ID from terminal audit records. Reservation hashes,
+payment-log IDs, plan IDs and timestamps remain to prevent duplicate settlement;
+these can still link to ARMember records and are not claimed to be anonymous.
+Unresolved/locked operations retain details until reconciliation. ARMember's own
+payment records are managed separately. Erased results return 410 on replay and
+cannot execute again. Export/erase requests identify existing WordPress users by
+email; process privacy requests before deleting their account. Uninstall retains
+the journal. Site operators must define retention and separately handle payer
+requests, since payer names have no email identity in this journal.
+
+
+Renewal naming update: create commands and existing-payment purpose JSON require
+`payer_name`; payment extras use `bono_renewal`. Routes, capabilities and settings
+are unchanged. This is a breaking change from the development contract. Historical
+payment records are not automatically rewritten; old-format records do not qualify
+for existing-payment reuse. Preserve journal reservations and old commands for audit.
+Obtain a fresh preview for a new command. Reconcile interrupted old operations before
+starting any replacement; never disguise an already consumed payment with a new reference.

@@ -7,6 +7,10 @@ use BonoArmApi\Infrastructure\Payment_Repository;
 use BonoArmApi\REST\V1_Controller;
 use BonoArmApi\REST\V2_Members_Controller;
 use BonoArmApi\REST\V2_Payments_Controller;
+use BonoArmApi\REST\V2_Renewals_Controller;
+use BonoArmApi\Infrastructure\Renewal_Repository;
+use BonoArmApi\ARMember\Renewal_Gateway;
+use BonoArmApi\Renewals\Service;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -34,6 +38,8 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'wp_abilities_api_categories_init', array( 'BonoArmApi\\Abilities', 'register_category' ) );
 		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
+		add_filter( 'wp_privacy_personal_data_exporters', array( 'BonoArmApi\\Privacy', 'exporters' ) );
+		add_filter( 'wp_privacy_personal_data_erasers', array( 'BonoArmApi\\Privacy', 'erasers' ) );
 		add_action( 'admin_init', array( 'BonoArmApi\\Privacy', 'register_policy_content' ) );
 		add_action( 'admin_notices', array( 'BonoArmApi\\Dependency', 'render_admin_notice' ) );
 		add_action( 'activated_plugin', array( $this, 'flush_schema_cache' ) );
@@ -64,6 +70,13 @@ final class Plugin {
 		( new V1_Controller( $this->repository, $this->gateway ) )->register_routes();
 		( new V2_Payments_Controller( $this->repository ) )->register_routes();
 		( new V2_Members_Controller( $this->gateway ) )->register_routes();
+		$badges = new \BonoArmApi\REST\V2_Badges_Controller();
+		$badges->register_routes();
+		add_filter( 'rest_post_dispatch', array( $badges, 'response_headers' ), 10, 3 );
+		$repository = new Renewal_Repository();
+		$renewals   = new V2_Renewals_Controller( new Service( $repository, new Renewal_Gateway( $repository ) ) );
+		$renewals->register_routes();
+		add_filter( 'rest_post_dispatch', array( $renewals, 'response_headers' ), 10, 3 );
 	}
 
 	/**

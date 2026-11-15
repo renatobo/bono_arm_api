@@ -55,6 +55,31 @@
       "key": "userId",
       "value": "123",
       "type": "string"
+    },
+    {
+      "key": "payment_reference",
+      "value": "REPLACE-with-unique-member-allocation",
+      "type": "string"
+    },
+    {
+      "key": "renewal_idempotency_key",
+      "value": "REPLACE-with-unique-operation-key",
+      "type": "string"
+    },
+    {
+      "key": "renewal_expected_state",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "renewal_operation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "badgeId",
+      "value": "7",
+      "type": "string"
     }
   ],
   "item": [
@@ -128,6 +153,181 @@
             "url": "{{baseUrl}}/{{namespace}}/members/{{userId}}/delete",
             "description": "Delete an ARMember member on supported single-site installs while preserving ARMember's delete cleanup lifecycle."
           }
+        }
+      ]
+    },
+    {
+      "name": "v2 Renewals",
+      "item": [
+        {
+          "name": "Preview renewal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/bono_armember/v2/members/{{userId}}/renewals",
+            "description": "See renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation. For an ambiguous suspended overdue target, verify nonpayment and include suspension_reason: \"nonpayment\" unchanged in preview and commit. A 422 error includes data.reason; confirmation cannot override unrelated restrictions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": 12,\n  \"dry_run\": true,\n  \"payment\": {\n    \"mode\": \"create\",\n    \"reference\": \"{{payment_reference}}\",\n    \"payer_name\": \"Ducati Newport Beach\",\n    \"amount\": \"30.00\",\n    \"currency\": \"USD\",\n    \"paid_at\": \"2026-11-13T09:00:00-08:00\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Preview succeeds\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"renewal_expected_state\", pm.response.json().expected_state);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Commit reviewed renewal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{renewal_idempotency_key}}"
+              }
+            ],
+            "url": "{{baseUrl}}/bono_armember/v2/members/{{userId}}/renewals",
+            "description": "See renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation. For an ambiguous suspended overdue target, verify nonpayment and include suspension_reason: \"nonpayment\" unchanged in preview and commit. A 422 error includes data.reason; confirmation cannot override unrelated restrictions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": 12,\n  \"dry_run\": false,\n  \"payment\": {\n    \"mode\": \"create\",\n    \"reference\": \"{{payment_reference}}\",\n    \"payer_name\": \"Ducati Newport Beach\",\n    \"amount\": \"30.00\",\n    \"currency\": \"USD\",\n    \"paid_at\": \"2026-11-13T09:00:00-08:00\"\n  },\n  \"expected_state\": \"{{renewal_expected_state}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"One cycle completed or replayed\", () => { pm.expect([200, 201]).to.include(pm.response.code); pm.expect(pm.response.json().cycles_advanced).to.eql(1); });",
+                  "if ([200, 201].includes(pm.response.code)) pm.collectionVariables.set(\"renewal_operation_id\", pm.response.json().operation_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read renewal operation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/bono_armember/v2/renewals/{{renewal_operation_id}}",
+            "description": "See renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation."
+          }
+        }
+      ],
+      "description": "For 422 data.reason=suspension_reason_unverified, obtain explicit per-member operator confirmation of nonpayment before adding top-level suspension_reason:\"nonpayment\" to a fresh preview and identical commit/replay. Do not default it for every member. Other restrictions remain protected."
+    },
+    {
+      "name": "v2 Badges",
+      "item": [
+        {
+          "name": "List available badge definitions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/bono_armember/v2/badges",
+            "description": "Enable Badge endpoints. Requires bono_arm_api_manage_badges. Find the actual VIP ID in the catalog first. PUT and DELETE need no body and are idempotent. DELETE removes every target award; automatic rules may award it again."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Badge request succeeds\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List stored badges assigned to a user",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/bono_armember/v2/members/{{userId}}/badges",
+            "description": "Enable Badge endpoints. Requires bono_arm_api_manage_badges. Find the actual VIP ID in the catalog first. PUT and DELETE need no body and are idempotent. DELETE removes every target award; automatic rules may award it again."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Badge request succeeds\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign an existing badge idempotently",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/bono_armember/v2/members/{{userId}}/badges/{{badgeId}}",
+            "description": "Enable Badge endpoints. Requires bono_arm_api_manage_badges. Find the actual VIP ID in the catalog first. PUT and DELETE need no body and are idempotent. DELETE removes every target award; automatic rules may award it again."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Badge request succeeds\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove all target badge awards from a user idempotently",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/bono_armember/v2/members/{{userId}}/badges/{{badgeId}}",
+            "description": "Enable Badge endpoints. Requires bono_arm_api_manage_badges. Find the actual VIP ID in the catalog first. PUT and DELETE need no body and are idempotent. DELETE removes every target award; automatic rules may award it again."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Badge request succeeds\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
