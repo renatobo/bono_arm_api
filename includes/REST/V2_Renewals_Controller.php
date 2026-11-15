@@ -81,7 +81,7 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 	public function get_item_schema() {
 		return array(
 			'$schema'              => 'http://json-schema.org/draft-04/schema#',
-			'title'                => 'sponsored-renewal-command',
+			'title'                => 'renewal-command',
 			'type'                 => 'object',
 			'additionalProperties' => false,
 			'required'             => array( 'plan_id', 'payment' ),
@@ -118,7 +118,7 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 							'maxLength' => 191,
 							'pattern'   => '^[^\x00-\x20\x7f]+$',
 						),
-						'sponsor_name'   => array(
+						'payer_name'     => array(
 							'type'      => 'string',
 							'minLength' => 1,
 							'maxLength' => 200,
@@ -164,7 +164,7 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 				return $this->invalid();
 			}
 		}
-		$fields = 'create' === $payment['mode'] ? array( 'mode', 'reference', 'sponsor_name', 'amount', 'currency', 'paid_at' ) : array( 'mode', 'payment_log_id' );
+		$fields = 'create' === $payment['mode'] ? array( 'mode', 'reference', 'payer_name', 'amount', 'currency', 'paid_at' ) : array( 'mode', 'payment_log_id' );
 		if ( array_diff( $fields, array_keys( $payment ) ) || array_diff( array_keys( $payment ), $fields ) ) {
 			return $this->invalid();
 		}
@@ -173,7 +173,7 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 			return $this->invalid();
 		}
 		if ( 'create' === $payment['mode'] ) {
-			if ( (float) $payment['amount'] <= 0 || sanitize_text_field( $payment['sponsor_name'] ) !== $payment['sponsor_name'] || '' === trim( $payment['sponsor_name'] ) ) {
+			if ( (float) $payment['amount'] <= 0 || sanitize_text_field( $payment['payer_name'] ) !== $payment['payer_name'] || '' === trim( $payment['payer_name'] ) ) {
 				return $this->invalid();
 			}
 			try {
@@ -231,10 +231,10 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 	}
 
 	private function disabled() {
-		return new WP_Error( 'bono_arm_api_feature_disabled', __( 'Sponsored renewal and member activation must both be enabled.', 'bono-arm-api' ), array( 'status' => 503 ) );
+		return new WP_Error( 'bono_arm_api_feature_disabled', __( 'Renewal and member activation must both be enabled.', 'bono-arm-api' ), array( 'status' => 503 ) );
 	}
 
 	private function invalid( $message = '' ) {
-		return new WP_Error( 'rest_invalid_param', $message ? $message : __( 'Invalid sponsored renewal command, preview token, or idempotency key.', 'bono-arm-api' ), array( 'status' => 400 ) );
+		return new WP_Error( 'rest_invalid_param', $message ? $message : __( 'Invalid renewal command, preview token, or idempotency key.', 'bono-arm-api' ), array( 'status' => 400 ) );
 	}
 }

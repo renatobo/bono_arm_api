@@ -37,7 +37,7 @@ Guidance for coding agents and contributors working in this repository.
 - The delete route currently supports single-site installs only.
 - Prefer ARMember's safer pre-delete and post-delete cleanup flow around `wp_delete_user()` instead of mirroring the current UI delete path literally.
 - Access uses the existing operation capabilities, granted to administrators by default.
-- Sponsored renewal: `POST /wp-json/bono_armember/v2/members/{user_id}/renewals`; status: `GET /wp-json/bono_armember/v2/renewals/{operation_id}`.
+- Renewal: `POST /wp-json/bono_armember/v2/members/{user_id}/renewals`; status: `GET /wp-json/bono_armember/v2/renewals/{operation_id}`.
 - Renewal requires renewal and activation capabilities/toggles; it supports the inspected Pro 8.1.1 manual recurring flow only.
 - Preserve durable renewal journal reservations across uninstall/reinstall and never automatically replay an uncertain write.
 - API availability is controlled by plugin setting `bono_arm_api_enable_transactions`.
@@ -148,3 +148,5 @@ WP-CLI is not installed locally; run it wherever `wp` is available, or hand-veri
 - WordPress privacy erasure removes terminal personal payloads, retaining duplicate-settlement
   reservations; unresolved operations require reconciliation first. Do not claim retained
   identifiers are anonymous.
+
+- Renewal payment identity uses `payer_name` and extras key `bono_renewal`.

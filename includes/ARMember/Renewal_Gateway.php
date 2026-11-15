@@ -78,7 +78,7 @@ class Renewal_Gateway {
 			}
 		}
 		// Never clear an ambiguous administrative suspension or another plan's restriction.
-		// A just-added matching sponsor payment must not hide the preceding payment failure.
+		// A just-added matching payment must not hide the preceding payment failure.
 		$latest = $this->repository->latest_payment( $user_id, $plan_id, $command['payment']['payment_log_id'] ?? 0 );
 		if ( ! empty( $data['arm_grace_period_action'] ) && 'failed_payment' !== $data['arm_grace_period_action'] ) {
 			return $this->unsupported( 'unrelated_grace_action' );
@@ -171,12 +171,12 @@ class Renewal_Gateway {
 				return $this->error( 'payment_not_found', 404 );
 			}
 			$extra   = $this->extra( $record['arm_extra_vars'] );
-			$purpose = $extra['bono_sponsored_renewal'] ?? array();
+			$purpose = $extra['bono_renewal'] ?? array();
 			// An admin can record this exact purpose in Add Manual Payment's Note field.
 			if ( ! $purpose && ! empty( $extra['note'] ) ) {
 				$purpose = json_decode( $extra['note'], true );
 			}
-			if ( ! $this->matches_payment( $record, $user_id, $plan_id, $quote['amount'], $currency ) || ! is_array( $purpose ) || (int) ( $purpose['completed_cycles'] ?? 0 ) !== $count || (int) ( $purpose['start_plan'] ?? 0 ) !== (int) $data['arm_start_plan'] || ( ! is_string( $purpose['sponsor_name'] ?? null ) || '' === trim( $purpose['sponsor_name'] ) ) || empty( $record['arm_transaction_id'] ) || '-' === $record['arm_transaction_id'] ) {
+			if ( ! $this->matches_payment( $record, $user_id, $plan_id, $quote['amount'], $currency ) || ! is_array( $purpose ) || (int) ( $purpose['completed_cycles'] ?? 0 ) !== $count || (int) ( $purpose['start_plan'] ?? 0 ) !== (int) $data['arm_start_plan'] || ( ! is_string( $purpose['payer_name'] ?? null ) || '' === trim( $purpose['payer_name'] ) ) || empty( $record['arm_transaction_id'] ) || '-' === $record['arm_transaction_id'] ) {
 				return $this->error( 'payment_mismatch', 422 );
 			}
 			$reference = $record['arm_transaction_id'];
@@ -268,7 +268,7 @@ class Renewal_Gateway {
 			$checkpoint( 'payment', 'intent' );
 			if ( 'create' === $payment['mode'] ) {
 				$metadata = array(
-					'sponsor_name'     => $payment['sponsor_name'],
+					'payer_name'       => $payment['payer_name'],
 					'operation_id'     => $operation_id,
 					'actor_id'         => get_current_user_id(),
 					'completed_cycles' => $projection['cycle'],
@@ -293,9 +293,9 @@ class Renewal_Gateway {
 							array_merge(
 								$projection['quote']['extra'],
 								array(
-									'bono_sponsored_renewal' => $metadata,
-									'note'      => wp_json_encode( $metadata ),
-									'manual_by' => $payment['sponsor_name'],
+									'bono_renewal' => $metadata,
+									'note'         => wp_json_encode( $metadata ),
+									'manual_by'    => $payment['payer_name'],
 								)
 							)
 						),
@@ -427,9 +427,9 @@ class Renewal_Gateway {
 			return $record === $projection['record'];
 		}
 		$extra   = $this->extra( $record['arm_extra_vars'] );
-		$purpose = $extra['bono_sponsored_renewal'] ?? array();
+		$purpose = $extra['bono_renewal'] ?? array();
 		return ( $purpose['operation_id'] ?? '' ) === $operation_id
-			&& ( $purpose['sponsor_name'] ?? '' ) === $command['payment']['sponsor_name']
+			&& ( $purpose['payer_name'] ?? '' ) === $command['payment']['payer_name']
 			&& (int) ( $purpose['completed_cycles'] ?? 0 ) === $projection['cycle']
 			&& wp_date( 'Y-m-d H:i:s', strtotime( $command['payment']['paid_at'] ), wp_timezone() ) === $record['arm_payment_date'];
 	}
@@ -506,6 +506,6 @@ class Renewal_Gateway {
 	}
 
 	private function error( $suffix, $status, $details = array() ) {
-		return new WP_Error( 'bono_arm_api_' . $suffix, __( 'The subscription or payment does not meet the sponsored renewal requirements.', 'bono-arm-api' ), array_merge( array( 'status' => $status ), $details ) );
+		return new WP_Error( 'bono_arm_api_' . $suffix, __( 'The subscription or payment does not meet the renewal requirements.', 'bono-arm-api' ), array_merge( array( 'status' => $status ), $details ) );
 	}
 }

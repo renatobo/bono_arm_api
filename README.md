@@ -352,14 +352,14 @@ Install Git Updater to receive update notifications and one-click updates from t
 
 Licensed under [GPL-2.0-or-later](https://www.gnu.org/licenses/gpl-2.0.html).
 
-## Sponsored renewal API
+## Renewal API
 
 `POST /wp-json/bono_armember/v2/members/{user_id}/renewals` previews or commits one
-sponsor-funded natural subscription cycle. It reactivates the account, preserves the original
+externally funded natural subscription cycle. It reactivates the account, preserves the original
 billing schedule, and creates exactly one successful manual payment or reuses an explicitly
-identified matching payment. It records money already received; it does not charge the sponsor.
+identified matching payment. It records money already received; it does not charge the payer.
 
-Enable **Sponsored renewal endpoints** and **Member activation endpoints** in Settings. The
+Enable **Renewal endpoints** and **Member activation endpoints** in Settings. The
 caller needs both `bono_arm_api_renew_members` and `bono_arm_api_activate_members`, using normal
 WordPress authentication. Renewal is disabled by default and currently supports the inspected
 **ARMember Pro 8.1.1** manual recurring subscriptions only; other existing endpoints retain their
@@ -374,7 +374,7 @@ Send JSON with `plan_id` and `payment`; `dry_run` defaults to `true`. Example pr
   "payment": {
     "mode": "create",
     "reference": "DNB-2026-member-123",
-    "sponsor_name": "Ducati Newport Beach",
+    "payer_name": "Ducati Newport Beach",
     "amount": "30.00",
     "currency": "USD",
     "paid_at": "2026-11-13T09:00:00-08:00"
@@ -392,9 +392,9 @@ payment IDs. Keep the original key and command after a timeout, even after the p
 For an already recorded payment, use `payment: {"mode":"existing","payment_log_id":4567}`.
 The record must be a successful manual subscription payment for the same member, plan, amount
 and currency. Its Add Manual Payment **Note** must be a JSON object identifying the actual
-`sponsor_name`, the stored `start_plan` timestamp and the projected `completed_cycles` count,
-for example `{"sponsor_name":"Ducati Newport Beach","start_plan":1759276800,"completed_cycles":2}`.
-Alternatively, an integration may record that object under `bono_sponsored_renewal` in serialized
+`payer_name`, the stored `start_plan` timestamp and the projected `completed_cycles` count,
+for example `{"payer_name":"Ducati Newport Beach","start_plan":1759276800,"completed_cycles":2}`.
+Alternatively, an integration may record that object under `bono_renewal` in serialized
 payment extras. Historical payments without explicit cycle purpose are rejected. The API never
 edits or deletes the reused payment; the journal records its association.
 
@@ -415,7 +415,7 @@ edits during settlement. The native invoice primitive and bookkeeping hooks are 
 ARMember mailers reached synchronously by the operation are suppressed; unrelated WordPress
 mail remains enabled. Mailchimp, spreadsheets and caller-owned email remain outside this API.
 
-See [the complete contract](docs/sponsored-renewal-api-spec.md), the updated
+See [the complete contract](docs/renewal-api-spec.md), the updated
 [v2 OpenAPI specification](docs/bono-arm-api-openapi-v2.json), and the Postman preview/commit/status
 examples. This beta is intended for staging validation before production enablement.
 
@@ -491,5 +491,14 @@ Unresolved/locked operations retain details until reconciliation. ARMember's own
 payment records are managed separately. Erased results return 410 on replay and
 cannot execute again. Export/erase requests identify existing WordPress users by
 email; process privacy requests before deleting their account. Uninstall retains
-the journal. Site operators must define retention and separately handle sponsor
-requests, since sponsor names have no email identity in this journal.
+the journal. Site operators must define retention and separately handle payer
+requests, since payer names have no email identity in this journal.
+
+
+Renewal naming update: create commands and existing-payment purpose JSON require
+`payer_name`; payment extras use `bono_renewal`. Routes, capabilities and settings
+are unchanged. This is a breaking change from the development contract. Historical
+payment records are not automatically rewritten; old-format records do not qualify
+for existing-payment reuse. Preserve journal reservations and old commands for audit.
+Obtain a fresh preview for a new command. Reconcile interrupted old operations before
+starting any replacement; never disguise an already consumed payment with a new reference.

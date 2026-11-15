@@ -1,19 +1,19 @@
-# Sponsored membership renewal API
+# Membership renewal API
 
-Status: implementation contract for sponsored renewals. Deployment and installed-plugin validation must be verified per environment.
+Status: implementation contract for renewals. Deployment and installed-plugin validation must be verified per environment.
 
-Implementation notes: the adapter accepts inspected Pro 8.1.1 only. It uses read interception around the original date helper for previews, without temporary writes. Existing-payment purpose can be an Add Manual Payment Note JSON object with `sponsor_name`, `start_plan` and `completed_cycles`, or the same structured object in `arm_extra_vars.bono_sponsored_renewal`. The SQL journal survives uninstall. Uncertain operations are conservatively blocked for manual reconciliation; no automatic rollback is claimed. Status reads remain available with mutation toggles disabled. API advisory locks do not coordinate portal/cron/third-party writes; avoid concurrent external edits during settlement.
+Implementation notes: the adapter accepts inspected Pro 8.1.1 only. It uses read interception around the original date helper for previews, without temporary writes. Existing-payment purpose can be an Add Manual Payment Note JSON object with `payer_name`, `start_plan` and `completed_cycles`, or the same structured object in `arm_extra_vars.bono_renewal`. The SQL journal survives uninstall. Uncertain operations are conservatively blocked for manual reconciliation; no automatic rollback is claimed. Status reads remain available with mutation toggles disabled. API advisory locks do not coordinate portal/cron/third-party writes; avoid concurrent external edits during settlement.
 
 
 ## Objective
 
-Provide one operation for a member whose subscription fees were paid externally by a sponsor. A completed operation must:
+Provide one operation for a member whose subscription fees were paid externally by a payer. A completed operation must:
 
 1. Reactivate the ARMember account.
 2. Renew exactly one natural subscription cycle, preserving its schedule.
 3. Create one successful manual transaction, or explicitly link the matching payment already recorded.
 
-This records external money received. It does not charge a card, collect money from the sponsor, initiate a refund, or change Mailchimp tags.
+This records external money received. It does not charge a card, collect money from the payer, initiate a refund, or change Mailchimp tags.
 
 ## Plugin integration
 
@@ -37,7 +37,7 @@ Restore nonpayment-related suspension for the target plan only. Native Pro 8.1.1
 
 ## Natural renewal cadence
 
-The processing date and sponsor payment date must never replace the subscription start date.
+The processing date and payment date must never replace the subscription start date.
 
 For the supported recurring plan:
 
@@ -49,7 +49,7 @@ For the supported recurring plan:
 
 ARMember calculates dates from the original start, completed-cycle count, interval, and billing-day setting. Do not replace that with a separate anniversary algorithm. Preserve ARMember's behavior for month ends, leap years, selected cycles, and the site's timezone.
 
-Example: an annual subscription starting October 1, 2025, with one completed payment and an October 1, 2026 due date, advances to October 1, 2027 after one sponsored renewal. Processing on November 13, 2026 must not move the anniversary to November 13.
+Example: an annual subscription starting October 1, 2025, with one completed payment and an October 1, 2026 due date, advances to October 1, 2027 after one renewal. Processing on November 13, 2026 must not move the anniversary to November 13.
 
 Preview must calculate projected state without temporarily persisting changes to live member metadata. Extract a pure calculator or use an isolated adapter of the original algorithm.
 
@@ -65,23 +65,23 @@ The resulting next due date must be in the future and ARMember's entitlement che
 
 Use `payment.mode: create` when no corresponding payment is already recorded. Require:
 
-- `reference`: a sponsor allocation reference unique to this member's payment.
-- `sponsor_name`: the actual external payer/sponsor.
+- `reference`: a payment allocation reference unique to this member's payment.
+- `payer_name`: the actual external payer/payer.
 - `amount`: positive decimal string, not a floating-point JSON number.
 - `currency`: ISO currency code matching the subscription/site currency.
 - `paid_at`: received-payment timestamp with timezone offset.
 
-For a sponsor bank transfer covering multiple members, use one distinct allocation reference per member. The common bank-transfer reference can additionally be kept in audit metadata.
+For a payer bank transfer covering multiple members, use one distinct allocation reference per member. The common bank-transfer reference can additionally be kept in audit metadata.
 
-Create a payment log with the correct user and plan, gateway `manual`, mode `manual_subscription`, normalized status `success`, supplied reference as `arm_transaction_id`, and actual amount/currency/payment date. Preserve the processing timestamp separately. Include sponsor, operator, operation ID, and covered cycle in structured metadata/notes.
+Create a payment log with the correct user and plan, gateway `manual`, mode `manual_subscription`, normalized status `success`, supplied reference as `arm_transaction_id`, and actual amount/currency/payment date. Preserve the processing timestamp separately. Include payer, operator, operation ID, and covered cycle in structured metadata/notes.
 
-The first implementation requires the supplied payment total and currency to match the stored cycle's calculated amount, including applicable tax. Reject discrepancies. Partial payments, discounts, split payments, and zero-fee sponsorship need an explicit separate policy.
+The first implementation requires the supplied payment total and currency to match the stored cycle's calculated amount, including applicable tax. Reject discrepancies. Partial payments, discounts, split payments, and zero-fee payment need an explicit separate policy.
 
 Use ARMember's transaction primitive so its invoice identity and bookkeeping are generated correctly. Verify the returned payment-log ID and read the record back. Do not label the transaction as personally paid by the member.
 
 ### Existing-payment mode
 
-Use `payment.mode: existing` with `payment_log_id` if the administrator already added the sponsor payment. This ID is the payment-log primary key, not an invoice number or gateway reference.
+Use `payment.mode: existing` with `payment_log_id` if the administrator already added the payment. This ID is the payment-log primary key, not an invoice number or gateway reference.
 
 Validate that the record belongs to the same member and plan, represents a successful manual external payment, matches amount/currency, and has not already funded another renewal. Its purpose must establish that it covers this next cycle; do not assume the latest successful historical payment does.
 
@@ -89,7 +89,7 @@ Associate the existing payment with the cycle and operation. Do not insert, over
 
 ### Duplicate-payment trap in the admin flow
 
-Edit Member's Renew/Renew Cycle action already calls `arm_add_manual_user_payment()`. Do not call the complete admin save flow and then add another sponsor transaction. The adapter must apply the necessary cycle/account transition and exactly one payment mode, preserving required ARMember bookkeeping without the default extra transaction.
+Edit Member's Renew/Renew Cycle action already calls `arm_add_manual_user_payment()`. Do not call the complete admin save flow and then add another payer transaction. The adapter must apply the necessary cycle/account transition and exactly one payment mode, preserving required ARMember bookkeeping without the default extra transaction.
 
 ## HTTP interface
 
@@ -112,7 +112,7 @@ Create-payment preview:
   "payment": {
     "mode": "create",
     "reference": "DNB-2026-Q4-member-123",
-    "sponsor_name": "Ducati Newport Beach",
+    "payer_name": "Ducati Newport Beach",
     "amount": "30.00",
     "currency": "USD",
     "paid_at": "2026-11-13T09:00:00-08:00"
@@ -206,9 +206,9 @@ The implementation may choose the internal write order to preserve ARMember hook
 ## Idempotency, concurrency, and recovery
 
 - Persist a durable operation journal in the database. Transients or request-local state are insufficient.
-- Canonicalize the business command and fingerprint member, plan, payment mode/reference or existing log, sponsor, amount/currency, and received timestamp. Exclude transport-only preview token and dry-run fields.
+- Canonicalize the business command and fingerprint member, plan, payment mode/reference or existing log, payer, amount/currency, and received timestamp. Exclude transport-only preview token and dry-run fields.
 - Same key and command returns the existing result; same key with a different command returns 409.
-- Enforce uniqueness for sponsor allocation references, consumed existing payment IDs, and settled member/plan/cycle. A new idempotency key must not bypass these constraints.
+- Enforce uniqueness for payment allocation references, consumed existing payment IDs, and settled member/plan/cycle. A new idempotency key must not bypass these constraints.
 - Serialize mutations per member/plan and recheck state under the lock. Concurrent requests for the same cycle must not both commit.
 - Reauthorize replay requests. Resolve an existing operation before demanding a still-valid preview token, so token expiry after a client timeout does not cause a second mutation.
 - Use journal states `in_progress`, `completed`, `resolved`, and `needs_reconciliation`. Include actor, relevant IDs, intended cycle, before-state, and completed write steps. Never store credentials.
@@ -233,7 +233,7 @@ Use WordPress's `{code, message, data: {status, operation_id?}}` envelope. Previ
 | 404 | `bono_arm_api_member_not_found`, `bono_arm_api_plan_not_found`, `bono_arm_api_payment_not_found` | Required record or assignment missing. |
 | 409 | `bono_arm_api_state_changed` | Expired preview or relevant state changed. |
 | 409 | `bono_arm_api_idempotency_conflict` | Same key with different command. |
-| 409 | `bono_arm_api_payment_already_applied` | Sponsor reference or existing payment already consumed. |
+| 409 | `bono_arm_api_payment_already_applied` | Payer reference or existing payment already consumed. |
 | 409 | `bono_arm_api_renewal_in_progress` | Concurrent mutation; include operation ID and `Retry-After`. |
 | 422 | `bono_arm_api_unsupported_subscription` | Unsupported mode, restriction, exhausted agreement, or invalid schedule. |
 | 422 | `bono_arm_api_payment_mismatch` | Wrong member/plan, unsuccessful payment, amount/currency/purpose mismatch. |
@@ -243,7 +243,7 @@ Use WordPress's `{code, message, data: {status, operation_id?}}` envelope. Previ
 
 ## Acceptance criteria
 
-1. Inactive overdue manual annual member: one cycle, active account and entitlement, one successful sponsor transaction.
+1. Inactive overdue manual annual member: one cycle, active account and entitlement, one successful payer transaction.
 2. Already-active member: activation no-op, exactly one new cycle/payment.
 3. October 1 annual anniversary remains October 1 when processed November 13.
 4. Fixed monthly billing days, multi-year intervals, month ends, leap years, and DST follow the supported ARMember schedule calculator.
@@ -258,7 +258,7 @@ Use WordPress's `{code, message, data: {status, operation_id?}}` envelope. Previ
 13. No changes for unauthorized callers, disabled feature, unavailable ARMember, auto-debit, unsupported restrictions, or invalid schedule.
 14. Dry run makes no business or notification changes and does not increment an invoice counter.
 15. No default extra admin-paid transaction and no activation/renewal/invoice emails; unrelated mail still works.
-16. Stored payment includes accurate sponsor amount/date/reference, successful status, invoice identity, operator, and covered cycle.
+16. Stored payment includes accurate payer amount/date/reference, successful status, invoice identity, operator, and covered cycle.
 17. Existing routes, payment reads, activation/deletion, capability upgrades, packaging, and release gates remain compatible.
 
 ## Verified source behavior and implementation limits
@@ -267,7 +267,7 @@ Inspected the supplied `wpdrocdesmo.com/armember.zip`, ARMember Pro 8.1.1. Sourc
 
 - `armember/core/classes/class.arm_member_forms.php:7467–7541`: admin cycle renewal updates the cycle count/date, clears nonpayment grace/suspension, and calls `arm_add_manual_user_payment`; paid-finite plans have a separate path.
 - `armember/core/classes/class.arm_members.php:6361`: `arm_get_next_due_date` derives the schedule from the stored start, completed cycles, configured interval/day, and selected cycle.
-- Same file, `arm_add_manual_user_payment` around line 8366: generates the default admin-paid transaction. It does not implement this sponsor reference/amount contract.
+- Same file, `arm_add_manual_user_payment` around line 8366: generates the default admin-paid transaction. It does not implement this payer reference/amount contract.
 - `armember/core/classes/class.arm_transaction.php:1017`: standalone Add Manual Payment records the payment without performing the Edit Member renewal transition.
 - `armember/core/classes/class.arm_api_service_feature.php:753` and `:846`: native add-membership and add-transaction routes are separate. They do not implement this combined contract.
 - `armember/core/classes/class.arm_subscription_plans.php:1705`: the native add-membership API uses a subscription-update path distinct from the admin Renew Cycle handler. Do not assume identical side effects.
@@ -324,5 +324,14 @@ Unresolved/locked operations retain details until reconciliation. ARMember's own
 payment records are managed separately. Erased results return 410 on replay and
 cannot execute again. Export/erase requests identify existing WordPress users by
 email; process privacy requests before deleting their account. Uninstall retains
-the journal. Site operators must define retention and separately handle sponsor
-requests, since sponsor names have no email identity in this journal.
+the journal. Site operators must define retention and separately handle payer
+requests, since payer names have no email identity in this journal.
+
+
+Renewal naming update: create commands and existing-payment purpose JSON require
+`payer_name`; payment extras use `bono_renewal`. Routes, capabilities and settings
+are unchanged. This is a breaking change from the development contract. Historical
+payment records are not automatically rewritten; old-format records do not qualify
+for existing-payment reuse. Preserve journal reservations and old commands for audit.
+Obtain a fresh preview for a new command. Reconcile interrupted old operations before
+starting any replacement; never disguise an already consumed payment with a new reference.

@@ -241,7 +241,7 @@
     },
     "/bono_armember/v2/members/{user_id}/renewals": {
       "post": {
-        "summary": "Preview or commit one sponsored natural renewal cycle",
+        "summary": "Preview or commit one natural renewal cycle",
         "description": "Requires bono_arm_api_renew_members AND bono_arm_api_activate_members, and both renewal/activation toggles. Supports inspected Pro 8.1.1 paid recurring manual subscriptions. Defaults to preview. First commit requires expected_state and Idempotency-Key. All responses use no-store. 409 in-progress includes Retry-After: 5. A partial/uncertain write returns 503 bono_arm_api_renewal_needs_reconciliation with operation_id; never retry with a new key. No card charge or ARMember delivery emails. Unsupported subscription errors include data.reason; suspension_reason_unverified requires explicit operator confirmation before a fresh preview. Malformed schedule fields identify data.field.",
         "parameters": [
           {
@@ -920,7 +920,7 @@
                 "required": [
                   "mode",
                   "reference",
-                  "sponsor_name",
+                  "payer_name",
                   "amount",
                   "currency",
                   "paid_at"
@@ -935,7 +935,7 @@
                     "maxLength": 191,
                     "pattern": "^[^\\x00-\\x20\\x7f]+$"
                   },
-                  "sponsor_name": {
+                  "payer_name": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 200
@@ -972,7 +972,7 @@
                     "minimum": 1
                   }
                 },
-                "description": "Successful manual payment for this member/plan/total/currency. Its structured purpose must identify sponsor_name, start_plan and completed_cycles; see the sponsored renewal guide."
+                "description": "Successful manual payment for this member/plan/total/currency. Its structured purpose must identify payer_name, start_plan and completed_cycles; see the renewal guide."
               }
             ]
           },

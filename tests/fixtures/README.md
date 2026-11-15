@@ -7,7 +7,7 @@ REST integration tests deliberately avoid bundling proprietary ARMember code.
 
 A licensed ARMember installation can be supplied in an external integration environment to exercise its real payment tables, mailer, and deletion hooks.
 
-Sponsored renewals have separate doubles in `renewal-stubs.php` and integration tests in
+Renewals have separate doubles in `renewal-stubs.php` and integration tests in
 `RenewalsTest.php`. These exercise real WordPress REST validation, capabilities, user metadata,
 SQL journal reservations, MySQL advisory locks, and injected write/hook failures. The ordinary
 CI suite uses a small annual-schedule/payment fake; it does not establish native ARMember parity.
@@ -27,7 +27,7 @@ transaction primitive runs against isolated fixture tables. Other ARMember servi
 doubles, so these tests do not establish full live-site lifecycle/hook compatibility. Run only
 against a disposable WordPress test database. Before production enablement, verify the actual
 site's ARMember hooks, subscription-table synchronization, notifications, tax settings and access
-rules in staging. Never run the sponsor payment examples against production as a smoke test.
+rules in staging. Never run the payer payment examples against production as a smoke test.
 
 `BadgesTest.php` uses a small badge catalog double and the real WordPress user metadata APIs. It verifies native-style serialized manual assignments, preservation of other awards, idempotent add/remove, malformed state, access/feature/dependency guards, concurrent metadata updates and no-store headers. User-list results describe stored assignments rather than ARMember display eligibility.
 

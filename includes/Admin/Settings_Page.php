@@ -34,7 +34,7 @@ final class Settings_Page {
 	public function register_settings() {
 		$settings = array(
 			BONO_ARM_API_OPTION_ENABLE_BADGES            => __( 'Badge endpoints', 'bono-arm-api' ),
-			BONO_ARM_API_OPTION_ENABLE_MEMBER_RENEWALS   => __( 'Sponsored renewal endpoints (also requires member activation)', 'bono-arm-api' ),
+			BONO_ARM_API_OPTION_ENABLE_MEMBER_RENEWALS   => __( 'Renewal endpoints (also requires member activation)', 'bono-arm-api' ),
 			BONO_ARM_API_OPTION_ENABLE_TRANSACTIONS      => __( 'Payment endpoints', 'bono-arm-api' ),
 			BONO_ARM_API_OPTION_ENABLE_MEMBER_ACTIVATION => __( 'Member activation endpoints', 'bono-arm-api' ),
 			BONO_ARM_API_OPTION_ENABLE_MEMBER_DELETE     => __( 'Member deletion endpoints', 'bono-arm-api' ),

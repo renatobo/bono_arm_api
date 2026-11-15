@@ -57,7 +57,7 @@
       "type": "string"
     },
     {
-      "key": "sponsor_reference",
+      "key": "payment_reference",
       "value": "REPLACE-with-unique-member-allocation",
       "type": "string"
     },
@@ -157,10 +157,10 @@
       ]
     },
     {
-      "name": "v2 Sponsored renewals",
+      "name": "v2 Renewals",
       "item": [
         {
-          "name": "Preview sponsored renewal",
+          "name": "Preview renewal",
           "request": {
             "method": "POST",
             "header": [
@@ -170,10 +170,10 @@
               }
             ],
             "url": "{{baseUrl}}/bono_armember/v2/members/{{userId}}/renewals",
-            "description": "See sponsored-renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation. For an ambiguous suspended overdue target, verify nonpayment and include suspension_reason: \"nonpayment\" unchanged in preview and commit. A 422 error includes data.reason; confirmation cannot override unrelated restrictions.",
+            "description": "See renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation. For an ambiguous suspended overdue target, verify nonpayment and include suspension_reason: \"nonpayment\" unchanged in preview and commit. A 422 error includes data.reason; confirmation cannot override unrelated restrictions.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plan_id\": 12,\n  \"dry_run\": true,\n  \"payment\": {\n    \"mode\": \"create\",\n    \"reference\": \"{{sponsor_reference}}\",\n    \"sponsor_name\": \"Ducati Newport Beach\",\n    \"amount\": \"30.00\",\n    \"currency\": \"USD\",\n    \"paid_at\": \"2026-11-13T09:00:00-08:00\"\n  }\n}",
+              "raw": "{\n  \"plan_id\": 12,\n  \"dry_run\": true,\n  \"payment\": {\n    \"mode\": \"create\",\n    \"reference\": \"{{payment_reference}}\",\n    \"payer_name\": \"Ducati Newport Beach\",\n    \"amount\": \"30.00\",\n    \"currency\": \"USD\",\n    \"paid_at\": \"2026-11-13T09:00:00-08:00\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -195,7 +195,7 @@
           ]
         },
         {
-          "name": "Commit reviewed sponsored renewal",
+          "name": "Commit reviewed renewal",
           "request": {
             "method": "POST",
             "header": [
@@ -209,10 +209,10 @@
               }
             ],
             "url": "{{baseUrl}}/bono_armember/v2/members/{{userId}}/renewals",
-            "description": "See sponsored-renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation. For an ambiguous suspended overdue target, verify nonpayment and include suspension_reason: \"nonpayment\" unchanged in preview and commit. A 422 error includes data.reason; confirmation cannot override unrelated restrictions.",
+            "description": "See renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation. For an ambiguous suspended overdue target, verify nonpayment and include suspension_reason: \"nonpayment\" unchanged in preview and commit. A 422 error includes data.reason; confirmation cannot override unrelated restrictions.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plan_id\": 12,\n  \"dry_run\": false,\n  \"payment\": {\n    \"mode\": \"create\",\n    \"reference\": \"{{sponsor_reference}}\",\n    \"sponsor_name\": \"Ducati Newport Beach\",\n    \"amount\": \"30.00\",\n    \"currency\": \"USD\",\n    \"paid_at\": \"2026-11-13T09:00:00-08:00\"\n  },\n  \"expected_state\": \"{{renewal_expected_state}}\"\n}",
+              "raw": "{\n  \"plan_id\": 12,\n  \"dry_run\": false,\n  \"payment\": {\n    \"mode\": \"create\",\n    \"reference\": \"{{payment_reference}}\",\n    \"payer_name\": \"Ducati Newport Beach\",\n    \"amount\": \"30.00\",\n    \"currency\": \"USD\",\n    \"paid_at\": \"2026-11-13T09:00:00-08:00\"\n  },\n  \"expected_state\": \"{{renewal_expected_state}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -244,7 +244,7 @@
               }
             ],
             "url": "{{baseUrl}}/bono_armember/v2/renewals/{{renewal_operation_id}}",
-            "description": "See sponsored-renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation."
+            "description": "See renewal-api-spec.md. Review preview before committing; keep the same idempotency key on retries. Never retry reconciliation failures as a new operation."
           }
         }
       ],

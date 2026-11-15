@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-15T21:47:10+00:00\n"
+"POT-Creation-Date: 2026-11-15T21:58:20+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: bono-arm-api\n"
@@ -63,7 +63,7 @@ msgid "Badge endpoints"
 msgstr ""
 
 #: includes/Admin/Settings_Page.php:37
-msgid "Sponsored renewal endpoints (also requires member activation)"
+msgid "Renewal endpoints (also requires member activation)"
 msgstr ""
 
 #: includes/Admin/Settings_Page.php:38
@@ -199,7 +199,7 @@ msgid "This account cannot be deleted through the API."
 msgstr ""
 
 #: includes/ARMember/Renewal_Gateway.php:509
-msgid "The subscription or payment does not meet the sponsored renewal requirements."
+msgid "The subscription or payment does not meet the renewal requirements."
 msgstr ""
 
 #: includes/Dependency.php:46
@@ -222,7 +222,7 @@ msgstr ""
 #: includes/Privacy.php:11
 #: includes/Privacy.php:19
 #: includes/Privacy.php:35
-msgid "Sponsored renewals"
+msgid "Renewals"
 msgstr ""
 
 #: includes/Privacy.php:39
@@ -242,7 +242,7 @@ msgid "Bono API for ARMember adds authenticated REST API endpoints for ARMember 
 msgstr ""
 
 #: includes/Privacy.php:108
-msgid "The plugin stores settings, capability grant history, and a durable sponsored-renewal journal containing operator and member IDs, sponsor payment details, cycle state, and write outcomes. Renewal reservations are retained across uninstall to prevent duplicate settlement after reinstall. It does not send data to a third party. Site operators are responsible for journal access, reconciliation, retention, and onward processing performed by API clients."
+msgid "The plugin stores settings, capability grant history, and a durable renewal journal containing operator and member IDs, payment details, cycle state, and write outcomes. Renewal reservations are retained across uninstall to prevent duplicate settlement after reinstall. It does not send data to a third party. Site operators are responsible for journal access, reconciliation, retention, and onward processing performed by API clients."
 msgstr ""
 
 #: includes/Renewals/Service.php:34
@@ -324,9 +324,9 @@ msgid "Operator-confirmed cause of the target plan suspension. Does not override
 msgstr ""
 
 #: includes/REST/V2_Renewals_Controller.php:234
-msgid "Sponsored renewal and member activation must both be enabled."
+msgid "Renewal and member activation must both be enabled."
 msgstr ""
 
 #: includes/REST/V2_Renewals_Controller.php:238
-msgid "Invalid sponsored renewal command, preview token, or idempotency key."
+msgid "Invalid renewal command, preview token, or idempotency key."
 msgstr ""

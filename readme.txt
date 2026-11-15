@@ -111,7 +111,7 @@ Adds badge listing, assignment and removal endpoints. Enable Badge endpoints and
 Adds explicit per-member nonpayment confirmation for ambiguous automatic plan suspensions and precise rejection reasons. Only send suspension_reason=nonpayment after the operator confirms the target cause; repeat it unchanged on preview/commit/replay.
 
 = 2.3.0-beta =
-Beta for staging validation of sponsored renewals on ARMember Pro 8.1.1. Renewal is disabled by default and requires both renewal and activation capabilities/settings. Review preview results before committing; reconcile uncertain operations before retrying.
+Beta for staging validation of renewals on ARMember Pro 8.1.1. Renewal is disabled by default and requires both renewal and activation capabilities/settings. Review preview results before committing; reconcile uncertain operations before retrying.
 
 = 2.2.0 =
 Changes v1 output: payment dates are now converted to UTC and notes are parsed correctly. The API refuses to delete administrators, and v2 context=edit needs the new bono_arm_api_read_payer_details capability. Review integrations before updating.
@@ -180,8 +180,8 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 * Added precise unsupported-subscription reason codes and regression coverage.
 
 = 2.3.0-beta =
-* Added v2 sponsored renewal preview/commit and operation status endpoints.
-* Reactivates the account, advances one natural billing cycle, and creates or explicitly reuses one sponsor payment.
+* Added v2 renewal preview/commit and operation status endpoints.
+* Reactivates the account, advances one natural billing cycle, and creates or explicitly reuses one payment.
 * Added a disabled-by-default renewal setting, dedicated capability, durable journal, idempotency, concurrency locks, and reconciliation handling.
 * Added native-helper integration tests, API examples, and journal retention/privacy documentation.
 
@@ -277,19 +277,19 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 
 This plugin is licensed under GPLv2 or later.
 
-== Sponsored renewal API ==
+== Renewal API ==
 
-POST /wp-json/bono_armember/v2/members/{user_id}/renewals previews or commits one natural sponsor-paid renewal cycle, reactivates the account, and creates one successful manual transaction or explicitly reuses a matching existing payment. This records external money already received; it does not charge the sponsor.
+POST /wp-json/bono_armember/v2/members/{user_id}/renewals previews or commits one natural externally paid renewal cycle, reactivates the account, and creates one successful manual transaction or explicitly reuses a matching existing payment. This records external money already received; it does not charge the payer.
 
-Enable Sponsored renewal endpoints and Member activation endpoints. Both bono_arm_api_renew_members and bono_arm_api_activate_members are required. Renewal is disabled by default and initially supports the inspected ARMember Pro 8.1.1 manual recurring subscriptions only. Other endpoints retain their existing ARMember/Lite support. Automatic debit, free/lifetime/paid-finite plans, cancellations, ambiguous restrictions, and renewals still overdue after one cycle are rejected.
+Enable Renewal endpoints and Member activation endpoints. Both bono_arm_api_renew_members and bono_arm_api_activate_members are required. Renewal is disabled by default and initially supports the inspected ARMember Pro 8.1.1 manual recurring subscriptions only. Other endpoints retain their existing ARMember/Lite support. Automatic debit, free/lifetime/paid-finite plans, cancellations, ambiguous restrictions, and renewals still overdue after one cycle are rejected.
 
-Send JSON containing plan_id and payment. dry_run defaults to true. payment.mode=create requires reference, sponsor_name, positive decimal-string amount, matching currency and paid_at with an explicit timezone. The total must match the stored cycle including tax. Review the preview, then repeat with dry_run=false, expected_state from the preview, and an Idempotency-Key header of 16-128 printable ASCII characters without whitespace. Previews expire after 15 minutes. Preserve the original key and command after timeouts; completed replays return the same operation/payment IDs even after preview expiry.
+Send JSON containing plan_id and payment. dry_run defaults to true. payment.mode=create requires reference, payer_name, positive decimal-string amount, matching currency and paid_at with an explicit timezone. The total must match the stored cycle including tax. Review the preview, then repeat with dry_run=false, expected_state from the preview, and an Idempotency-Key header of 16-128 printable ASCII characters without whitespace. Previews expire after 15 minutes. Preserve the original key and command after timeouts; completed replays return the same operation/payment IDs even after preview expiry.
 
-payment.mode=existing requires payment_log_id and no create-only fields. The payment must belong to the same member/plan, be a successful manual subscription payment, and match amount/currency. Its Add Manual Payment Note must be JSON with sponsor_name, start_plan (stored timestamp), and completed_cycles (projected count), or the same object must exist in serialized extras under bono_sponsored_renewal. Payments without explicit next-cycle purpose are rejected. Existing payments are never edited or deleted.
+payment.mode=existing requires payment_log_id and no create-only fields. The payment must belong to the same member/plan, be a successful manual subscription payment, and match amount/currency. Its Add Manual Payment Note must be JSON with payer_name, start_plan (stored timestamp), and completed_cycles (projected count), or the same object must exist in serialized extras under bono_renewal. Payments without explicit next-cycle purpose are rejected. Existing payments are never edited or deleted.
 
 GET /wp-json/bono_armember/v2/renewals/{operation_id} reads the durable operation using both capabilities, even with mutation toggles disabled. Renewal responses use Cache-Control: no-store. Lock conflicts return 409 and Retry-After: 5. Partial/uncertain writes return 503 bono_arm_api_renewal_needs_reconciliation with operation_id and known steps; interrupted in_progress operations also block automatic re-execution. Inspect and reconcile before repair; do not retry with a new key or payment.
 
-The SQL journal reserves references, payment IDs and member/plan/cycles and survives uninstall/reinstall to preserve consumption evidence. API writes serialize per member; portal/cron/third-party writes do not share these locks, so avoid concurrent external edits. No rollback of third-party hooks is claimed. Native invoice/bookkeeping hooks are retained. ARMember mailers reached synchronously by the operation are suppressed; unrelated WordPress mail remains enabled. Mailchimp, spreadsheets and caller-owned email are outside this API. Full examples, recovery guidance and the contract are in the GitHub README and docs/sponsored-renewal-api-spec.md; v2 OpenAPI and Postman examples are updated.
+The SQL journal reserves references, payment IDs and member/plan/cycles and survives uninstall/reinstall to preserve consumption evidence. API writes serialize per member; portal/cron/third-party writes do not share these locks, so avoid concurrent external edits. No rollback of third-party hooks is claimed. Native invoice/bookkeeping hooks are retained. ARMember mailers reached synchronously by the operation are suppressed; unrelated WordPress mail remains enabled. Mailchimp, spreadsheets and caller-owned email are outside this API. Full examples, recovery guidance and the contract are in the GitHub README and docs/renewal-api-spec.md; v2 OpenAPI and Postman examples are updated.
 
 For an ambiguous suspended target, 422 bono_arm_api_unsupported_subscription includes data.reason=suspension_reason_unverified. After explicit per-member operator confirmation only, add top-level "suspension_reason":"nonpayment" to the preview and repeat unchanged on commit/replay. Never default this for all members: ARMember can store manual and automatic suspension in the same shape. The confirmation is journaled and bound to the command; the target must be overdue, and cancellation, account restrictions, unrelated grace actions and other-plan restrictions remain protected. Unsupported-subscription errors include data.reason; malformed schedule fields also include data.field without raw metadata or credentials.
 
@@ -340,5 +340,14 @@ Unresolved/locked operations retain details until reconciliation. ARMember's own
 payment records are managed separately. Erased results return 410 on replay and
 cannot execute again. Export/erase requests identify existing WordPress users by
 email; process privacy requests before deleting their account. Uninstall retains
-the journal. Site operators must define retention and separately handle sponsor
-requests, since sponsor names have no email identity in this journal.
+the journal. Site operators must define retention and separately handle payer
+requests, since payer names have no email identity in this journal.
+
+
+Renewal naming update: create commands and existing-payment purpose JSON require
+`payer_name`; payment extras use `bono_renewal`. Routes, capabilities and settings
+are unchanged. This is a breaking change from the development contract. Historical
+payment records are not automatically rewritten; old-format records do not qualify
+for existing-payment reuse. Preserve journal reservations and old commands for audit.
+Obtain a fresh preview for a new command. Reconcile interrupted old operations before
+starting any replacement; never disguise an already consumed payment with a new reference.

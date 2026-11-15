@@ -84,7 +84,7 @@ final class RenewalsTest extends WP_UnitTestCase {
 		update_user_meta( $this->member, 'arm_user_suspended_plan_ids', array() );
 		update_option( BONO_ARM_API_OPTION_ENABLE_MEMBER_RENEWALS, true );
 		update_option( BONO_ARM_API_OPTION_ENABLE_MEMBER_ACTIVATION, true );
-		$this->body = array( 'plan_id' => 12, 'payment' => array( 'mode' => 'create', 'reference' => 'sponsor-allocation-' . $this->member, 'sponsor_name' => "Sponsor O'Neil", 'amount' => '30.00', 'currency' => 'USD', 'paid_at' => gmdate( 'Y-m-d\T12:00:00+00:00' ) ) );
+		$this->body = array( 'plan_id' => 12, 'payment' => array( 'mode' => 'create', 'reference' => 'payer-allocation-' . $this->member, 'payer_name' => "Payer O'Neil", 'amount' => '30.00', 'currency' => 'USD', 'paid_at' => gmdate( 'Y-m-d\T12:00:00+00:00' ) ) );
 		do_action( 'rest_api_init' );
 	}
 
@@ -324,7 +324,7 @@ final class RenewalsTest extends WP_UnitTestCase {
 	public function test_existing_payment_reused_without_editing_it() {
 		global $arm_payment_gateways;
 		$data = get_user_meta( $this->member, 'arm_user_plan_12', true );
-		$id = $arm_payment_gateways->arm_save_payment_log( array( 'arm_user_id' => $this->member, 'arm_plan_id' => 12, 'arm_payment_gateway' => 'manual', 'arm_payment_mode' => 'manual_subscription', 'arm_transaction_status' => 'success', 'arm_amount' => '30.00', 'arm_currency' => 'USD', 'arm_transaction_id' => 'existing-ref', 'arm_extra_vars' => maybe_serialize( array( 'note' => wp_json_encode( array( 'sponsor_name' => 'Sponsor', 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2 ) ) ) ) ) );
+		$id = $arm_payment_gateways->arm_save_payment_log( array( 'arm_user_id' => $this->member, 'arm_plan_id' => 12, 'arm_payment_gateway' => 'manual', 'arm_payment_mode' => 'manual_subscription', 'arm_transaction_status' => 'success', 'arm_amount' => '30.00', 'arm_currency' => 'USD', 'arm_transaction_id' => 'existing-ref', 'arm_extra_vars' => maybe_serialize( array( 'note' => wp_json_encode( array( 'payer_name' => 'Payer', 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2 ) ) ) ) ) );
 		$record = $this->repository->payment( $id );
 		$this->body['payment'] = array( 'mode' => 'existing', 'payment_log_id' => (int) $id );
 		$response = $this->request( $this->commit_body() );
@@ -422,7 +422,7 @@ final class RenewalsTest extends WP_UnitTestCase {
 		$this->body['payment'] = array( 'mode' => 'existing', 'payment_log_id' => (int) $id );
 		$this->assertSame( 'bono_arm_api_payment_mismatch', $this->request()->get_data()['code'] );
 		$data = get_user_meta( $this->member, 'arm_user_plan_12', true );
-		$wpdb->update( $wpdb->prefix . 'arm_payment_log', array( 'arm_extra_vars' => maybe_serialize( array( 'bono_sponsored_renewal' => array( 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2, 'sponsor_name' => 'Sponsor' ) ) ) ), array( 'arm_log_id' => $id ) );
+		$wpdb->update( $wpdb->prefix . 'arm_payment_log', array( 'arm_extra_vars' => maybe_serialize( array( 'bono_renewal' => array( 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2, 'payer_name' => 'Payer' ) ) ) ), array( 'arm_log_id' => $id ) );
 		foreach ( array( 'arm_user_id' => $this->actor, 'arm_plan_id' => 99, 'arm_amount' => '29.00', 'arm_currency' => 'EUR', 'arm_transaction_status' => 'pending', 'arm_payment_gateway' => 'stripe' ) as $field => $bad ) {
 			$record = $this->repository->payment( $id );
 			$wpdb->update( $wpdb->prefix . 'arm_payment_log', array( $field => $bad ), array( 'arm_log_id' => $id ) );
@@ -506,7 +506,7 @@ final class RenewalsTest extends WP_UnitTestCase {
 	public function test_existing_payment_is_unchanged_after_activation_failure() {
 		global $arm_payment_gateways;
 		$data = get_user_meta( $this->member, 'arm_user_plan_12', true );
-		$id = $arm_payment_gateways->arm_save_payment_log( array( 'arm_user_id' => $this->member, 'arm_plan_id' => 12, 'arm_payment_gateway' => 'manual', 'arm_payment_mode' => 'manual_subscription', 'arm_transaction_status' => 'success', 'arm_amount' => '30.00', 'arm_currency' => 'USD', 'arm_transaction_id' => 'external-allocation', 'arm_extra_vars' => maybe_serialize( array( 'note' => wp_json_encode( array( 'sponsor_name' => 'Sponsor', 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2 ) ) ) ) ) );
+		$id = $arm_payment_gateways->arm_save_payment_log( array( 'arm_user_id' => $this->member, 'arm_plan_id' => 12, 'arm_payment_gateway' => 'manual', 'arm_payment_mode' => 'manual_subscription', 'arm_transaction_status' => 'success', 'arm_amount' => '30.00', 'arm_currency' => 'USD', 'arm_transaction_id' => 'external-allocation', 'arm_extra_vars' => maybe_serialize( array( 'note' => wp_json_encode( array( 'payer_name' => 'Payer', 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2 ) ) ) ) ) );
 		$this->body['payment'] = array( 'mode' => 'existing', 'payment_log_id' => (int) $id );
 		$record = $this->repository->payment( $id );
 		$body = $this->commit_body();
@@ -578,7 +578,7 @@ final class RenewalsTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'payment', $schema['properties'] );
 	}
 
-	public function test_received_payment_time_and_sponsor_are_recorded_accurately() {
+	public function test_received_payment_time_and_payer_are_recorded_accurately() {
 		update_option( 'timezone_string', 'America/Los_Angeles' );
 		$this->body['payment']['paid_at'] = gmdate( 'Y' ) . '-11-13T09:00:00-08:00';
 		$result = $this->request( $this->commit_body() )->get_data();
@@ -588,18 +588,18 @@ final class RenewalsTest extends WP_UnitTestCase {
 		$this->assertSame( 'manual', $record['arm_payment_gateway'] );
 		$this->assertSame( 'success', $record['arm_transaction_status'] );
 		$extra = arm_maybe_unserialize( $record['arm_extra_vars'] );
-		$this->assertSame( "Sponsor O'Neil", $extra['bono_sponsored_renewal']['sponsor_name'] );
-		$this->assertSame( $this->actor, $extra['bono_sponsored_renewal']['actor_id'] );
-		$this->assertSame( $result['operation_id'], $extra['bono_sponsored_renewal']['operation_id'] );
-		$this->assertSame( 2, $extra['bono_sponsored_renewal']['completed_cycles'] );
+		$this->assertSame( "Payer O'Neil", $extra['bono_renewal']['payer_name'] );
+		$this->assertSame( $this->actor, $extra['bono_renewal']['actor_id'] );
+		$this->assertSame( $result['operation_id'], $extra['bono_renewal']['operation_id'] );
+		$this->assertSame( 2, $extra['bono_renewal']['completed_cycles'] );
 	}
 
-	public function test_existing_sponsor_payment_does_not_hide_nonpayment_suspension() {
+	public function test_existing_payer_payment_does_not_hide_nonpayment_suspension() {
 		global $arm_payment_gateways;
 		$data = get_user_meta( $this->member, 'arm_user_plan_12', true );
 		$base = array( 'arm_user_id' => $this->member, 'arm_plan_id' => 12, 'arm_payment_gateway' => 'manual', 'arm_payment_mode' => 'manual_subscription', 'arm_amount' => '30.00', 'arm_currency' => 'USD' );
 		$arm_payment_gateways->arm_save_payment_log( $base + array( 'arm_transaction_status' => 'failed', 'arm_transaction_id' => 'failed-cycle' ) );
-		$id = $arm_payment_gateways->arm_save_payment_log( $base + array( 'arm_transaction_status' => 'success', 'arm_transaction_id' => 'sponsor-allocation', 'arm_extra_vars' => maybe_serialize( array( 'note' => wp_json_encode( array( 'sponsor_name' => 'Sponsor', 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2 ) ) ) ) ) );
+		$id = $arm_payment_gateways->arm_save_payment_log( $base + array( 'arm_transaction_status' => 'success', 'arm_transaction_id' => 'payer-allocation', 'arm_extra_vars' => maybe_serialize( array( 'note' => wp_json_encode( array( 'payer_name' => 'Payer', 'start_plan' => $data['arm_start_plan'], 'completed_cycles' => 2 ) ) ) ) ) );
 		update_user_meta( $this->member, 'arm_user_suspended_plan_ids', array( 12 ) );
 		$this->body['payment'] = array( 'mode' => 'existing', 'payment_log_id' => (int) $id );
 		$result = $this->request( $this->commit_body() );
