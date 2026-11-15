@@ -327,6 +327,9 @@
                 }
               }
             }
+          },
+          "410": {
+            "description": "Personal operation details were erased; reservations remain and the key cannot execute again."
           }
         }
       }
@@ -334,7 +337,7 @@
     "/bono_armember/v2/renewals/{operation_id}": {
       "get": {
         "summary": "Read durable renewal state and reconciliation details",
-        "description": "Requires both renewal and activation capabilities, including on replay. Remains readable when mutation toggles are disabled for recovery. All responses have Cache-Control: no-store. Journal states: in_progress, completed, failed_no_change, needs_reconciliation. In-progress after a timeout may indicate an interrupted write: inspect before repair.",
+        "description": "Requires both renewal and activation capabilities, including on replay. Remains readable when mutation toggles are disabled for recovery. All responses have Cache-Control: no-store. Journal states: in_progress, completed, resolved, needs_reconciliation. In-progress after a timeout may indicate an interrupted write: inspect before repair.",
         "parameters": [
           {
             "name": "operation_id",
@@ -378,7 +381,7 @@
                       "enum": [
                         "in_progress",
                         "completed",
-                        "failed_no_change",
+                        "resolved",
                         "needs_reconciliation"
                       ]
                     },
@@ -407,6 +410,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Journal storage unavailable."
           }
         }
       }
@@ -417,19 +423,10 @@
         "description": "Requires bono_arm_api_manage_badges and enabled Badge endpoints setting. Inspected ARMember Pro 8.1.1 badge support. No request body. Removal preserves other badges and definitions; automatic rules may award it again. User list reports stored assignments, not current display eligibility. Multisite target must belong to this site. Avoid concurrent native admin/cron edits.",
         "parameters": [],
         "responses": {
-          "400": {
-            "$ref": "#/components/responses/RestError"
-          },
           "401": {
             "$ref": "#/components/responses/RestError"
           },
           "403": {
-            "$ref": "#/components/responses/RestError"
-          },
-          "404": {
-            "$ref": "#/components/responses/RestError"
-          },
-          "409": {
             "$ref": "#/components/responses/RestError"
           },
           "503": {
@@ -633,6 +630,79 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/bono_armember/v2/renewals/{operation_id}/resolve": {
+      "post": {
+        "summary": "Record administrator reconciliation without replaying vendor writes",
+        "description": "Requires renewal and activation capabilities plus manage_options. Available with mutation toggles disabled. Explicit operator attestation after inspecting or repairing ARMember. All payment reservations remain; a reversed cycle releases only its cycle reservation.",
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "confirm_reconciled",
+                  "cycle_stands",
+                  "payment_stands"
+                ],
+                "properties": {
+                  "confirm_reconciled": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "cycle_stands": {
+                    "type": "boolean"
+                  },
+                  "payment_stands": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolution recorded or identical replay."
+          },
+          "400": {
+            "description": "Invalid attestation."
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "403": {
+            "description": "Required capabilities missing."
+          },
+          "404": {
+            "description": "Operation or journal schema absent."
+          },
+          "409": {
+            "description": "Live member lock or conflicting resolution/state."
+          },
+          "503": {
+            "description": "Journal update failed."
+          },
+          "410": {
+            "description": "Operation details already erased."
           }
         }
       }

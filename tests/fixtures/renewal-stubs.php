@@ -68,8 +68,17 @@ function bono_renew_native_method( $file, $name ) {
 	}
 	throw new RuntimeException( 'Unclosed native helper: ' . $name );
 }
+class Bono_Native_Delegating_Helper {
+	private $fallback;
+	public function __construct( $fallback ) { $this->fallback = $fallback; }
+	public function __call( $name, $args ) { return $this->fallback->$name( ...$args ); }
+}
 $bono_native_source = getenv( 'BONO_ARMEMBER_SOURCE' );
 if ( $bono_native_source ) {
+	eval( 'class Bono_Native_Subscriptions extends Bono_Native_Delegating_Helper {' . bono_renew_native_method( $bono_native_source . '/core/classes/class.arm_subscription_plans.php', 'get_member_current_subscription_plan_details' ) . '}' );
+	eval( 'class Bono_Native_Restriction {' . bono_renew_native_method( $bono_native_source . '/core/classes/class.arm_restriction.php', 'arm_check_content_hasaccess' ) . '}' );
+	eval( 'class Bono_Native_Badge_Reader {' . bono_renew_native_method( $bono_native_source . '/core/classes/class.arm_members_badges.php', 'arm_get_user_achievements_data' ) . '}' );
+
 	eval( str_replace( 'function arm_set_member_status(', 'function bono_renew_native_activation(', bono_renew_native_method( $bono_native_source . '/core/classes/class.arm_members.php', 'arm_set_member_status' ) ) );
 	// The only eval input is source explicitly supplied by the local test operator.
 	eval( 'class ARM_Plan extends Bono_Renew_Test_Plan {' . bono_renew_native_method( $bono_native_source . '/core/classes/class.arm_subscription_plans.php', 'prepare_recurring_data' ) . '}' );

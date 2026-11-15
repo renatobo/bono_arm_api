@@ -49,6 +49,29 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 				'permission_callback' => array( $this, 'can_renew' ),
 			)
 		);
+		register_rest_route(
+			$this->namespace,
+			'/renewals/(?P<operation_id>[a-f0-9-]{36})/resolve',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'resolve' ),
+				'permission_callback' => array( $this, 'can_resolve' ),
+			)
+		);
+	}
+
+	public function resolve( WP_REST_Request $request ) {
+		$body = $request->get_json_params();
+		if ( ! $request->is_json_content_type() || ! is_array( $body ) || array_diff( array_keys( $body ), array( 'cycle_stands', 'payment_stands', 'confirm_reconciled' ) ) || true !== ( $body['confirm_reconciled'] ?? null ) || ! is_bool( $body['cycle_stands'] ?? null ) || ! is_bool( $body['payment_stands'] ?? null ) ) {
+			return $this->invalid();
+		}
+		$result = $this->service->resolve( $request['operation_id'], $body['cycle_stands'], $body['payment_stands'] );
+		return is_wp_error( $result ) ? $result : new WP_REST_Response( $result, 200, array( 'Cache-Control' => 'no-store' ) );
+	}
+
+	public function can_resolve() {
+		$allowed = $this->can_renew();
+		return true === $allowed && current_user_can( 'manage_options' ) ? true : new WP_Error( 'rest_forbidden', __( 'You are not allowed to perform this action.', 'bono-arm-api' ), array( 'status' => rest_authorization_required_code() ) );
 	}
 
 	public function can_renew() {
@@ -197,7 +220,7 @@ final class V2_Renewals_Controller extends WP_REST_Controller {
 
 	/** REST error conversion otherwise discards HTTP retry/cache headers. */
 	public function response_headers( $response, $server, $request ) {
-		if ( preg_match( '#^/' . preg_quote( $this->namespace, '#' ) . '/(?:members/\d+/renewals|renewals/[a-f0-9-]{36})$#D', $request->get_route() ) ) {
+		if ( preg_match( '#^/' . preg_quote( $this->namespace, '#' ) . '/(?:members/\d+/renewals|renewals/[a-f0-9-]{36}(?:/resolve)?)$#D', $request->get_route() ) ) {
 			$response->header( 'Cache-Control', 'no-store' );
 			$data = $response->get_data();
 			if ( isset( $data['code'] ) && 'bono_arm_api_renewal_in_progress' === $data['code'] ) {

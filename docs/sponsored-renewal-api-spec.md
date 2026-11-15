@@ -1,10 +1,9 @@
 # Sponsored membership renewal API
 
-Status: implemented on `feat-renew-api` for local review and testing; not deployed. The design and acceptance criteria below remain the contract.
+Status: implementation contract for sponsored renewals. Deployment and installed-plugin validation must be verified per environment.
 
 Implementation notes: the adapter accepts inspected Pro 8.1.1 only. It uses read interception around the original date helper for previews, without temporary writes. Existing-payment purpose can be an Add Manual Payment Note JSON object with `sponsor_name`, `start_plan` and `completed_cycles`, or the same structured object in `arm_extra_vars.bono_sponsored_renewal`. The SQL journal survives uninstall. Uncertain operations are conservatively blocked for manual reconciliation; no automatic rollback is claimed. Status reads remain available with mutation toggles disabled. API advisory locks do not coordinate portal/cron/third-party writes; avoid concurrent external edits during settlement.
 
-Intended destination: `bono_arm_api/docs/sponsored-renewal-api-spec.md`.
 
 ## Objective
 
@@ -183,7 +182,7 @@ Return a real agreement expiry separately as `expires_at` inside before/after wh
 
 Return `operation_id`, `state: completed`, `user_id`, `plan_id`, `cycles_advanced: 1`, verified actual before/after state, and payment `{mode, created, payment_log_id, invoice_id, reference, amount, currency}`. Include `idempotent_replay: false` and notification policy.
 
-Set `Location: /wp-json/bono_armember/v2/renewals/{operation_id}`. A completed authorized replay returns the same result with HTTP 200 and `idempotent_replay: true`.
+Set `Location` to the absolute URL returned by `rest_url()` for `bono_armember/v2/renewals/{operation_id}` (including custom REST prefixes or plain-permalink query routing). A completed authorized replay returns the same result with HTTP 200 and `idempotent_replay: true`.
 
 ### Operation status
 
@@ -212,7 +211,7 @@ The implementation may choose the internal write order to preserve ARMember hook
 - Enforce uniqueness for sponsor allocation references, consumed existing payment IDs, and settled member/plan/cycle. A new idempotency key must not bypass these constraints.
 - Serialize mutations per member/plan and recheck state under the lock. Concurrent requests for the same cycle must not both commit.
 - Reauthorize replay requests. Resolve an existing operation before demanding a still-valid preview token, so token expiry after a client timeout does not cause a second mutation.
-- Use journal states `in_progress`, `completed`, `failed_no_change`, and `needs_reconciliation`. Include actor, relevant IDs, intended cycle, before-state, and completed write steps. Never store credentials.
+- Use journal states `in_progress`, `completed`, `resolved`, and `needs_reconciliation`. Include actor, relevant IDs, intended cycle, before-state, and completed write steps. Never store credentials.
 - Use database transactions only after verifying all affected storage and hooks. Rollback does not undo external mail/hooks or stale WordPress object-cache state. Invalidate/reconcile caches and defer external side effects appropriately.
 - If rollback cannot be proven and a payment or cycle might have committed, return 503 with operation ID and known step outcomes. Block automatic re-execution and further settlement of that cycle until reconciled. Do not repair uncertainty by creating another transaction or advancing another period.
 - A failed renewal using an existing payment must not delete or alter that historical payment.
@@ -286,3 +285,44 @@ Responses retain the existing 422 code and add `data.reason`: `plan_inactive`,
 `due_date_not_advanced`, `entitlement_denied`, `cycle_amount_invalid`,
 `tax_configuration_unsupported`, or `tax_rate_invalid`. `invalid_schedule_field` also provides
 `data.field` (the field name only). These diagnostics do not expose raw metadata or credentials.
+
+## Renewal reconciliation and privacy
+
+`POST /wp-json/bono_armember/v2/renewals/{operation_id}/resolve` records an
+operator's reconciliation of an interrupted or failed operation. It requires
+`manage_options` plus both renewal and activation capabilities, even when mutation
+toggles are off. Inspect the operation and ARMember payment and subscription state,
+perform any necessary repair, then send JSON:
+
+```json
+{"confirm_reconciled":true,"cycle_stands":true,"payment_stands":true}
+```
+
+The booleans attest to the state after inspection or external repair; this endpoint
+never repairs ARMember or replays writes. It records the operator ID and UTC time,
+and changes the journal state to `resolved`. A live member lock returns 409 with
+`Retry-After: 5`. An identical resolution is idempotent; contradictory resolutions
+and attempts to resolve a completed operation return 409. The old idempotency key
+returns 409 `bono_arm_api_operation_resolved` and cannot execute again.
+
+Payment/reference reservations are always retained, including a payment an operator
+has reversed. If `cycle_stands` is false, only the cycle reservation is released,
+allowing a fresh preview with a new, independently verified payment reference after
+repair. If the payment stands but the cycle does not, repair entitlement externally;
+do not record the same money again under another reference. The endpoint trusts the
+explicit administrator attestation; it is not an automatic reconciliation engine.
+
+Payment is recorded and validated before entitlement is extended. Verification
+failures record the named checkpoint and exception class, never exception messages.
+
+WordPress privacy tools export member journal details and operator audit records.
+Erasure removes personal payloads from completed/resolved member operations and
+removes the requesting operator's ID from terminal audit records. Reservation hashes,
+payment-log IDs, plan IDs and timestamps remain to prevent duplicate settlement;
+these can still link to ARMember records and are not claimed to be anonymous.
+Unresolved/locked operations retain details until reconciliation. ARMember's own
+payment records are managed separately. Erased results return 410 on replay and
+cannot execute again. Export/erase requests identify existing WordPress users by
+email; process privacy requests before deleting their account. Uninstall retains
+the journal. Site operators must define retention and separately handle sponsor
+requests, since sponsor names have no email identity in this journal.

@@ -131,9 +131,11 @@ branch push alone runs nothing: open the PR to get CI.
 - **The settings page is under Settings**, so core's `options-head.php` already calls
   `settings_errors()`. Do not call it again — notices print twice.
 - **Feature toggles fail closed.** Every endpoint checks its `bono_arm_api_enable_*`
-  option and returns 503 when off. Tests must set the option. Exception: renewal status
-  remains readable with both renewal and activation capabilities while mutations are disabled,
-  so operators can investigate interrupted writes. Status never installs the journal schema.
+  option and returns 503 when off. Tests must set the option. Exception: renewal status and administrator reconciliation
+  remain available with both renewal and activation capabilities while mutations are disabled;
+  reconciliation also requires manage_options,
+  so operators can investigate interrupted writes. Status never installs the journal schema. Resolution records explicit operator attestation,
+  never repeats ARMember writes, and preserves payment reservations.
 
 ## Translations
 
@@ -141,3 +143,8 @@ Regenerate after changing any translatable string (line references drift):
 `wp i18n make-pot . languages/bono-arm-api.pot`
 WP-CLI is not installed locally; run it wherever `wp` is available, or hand-verify with
 `msgfmt --check`. Header metadata (Plugin Name, Description, Author) belongs in the POT too.
+
+- The checked-in Stable tag stays at the last stable release until release preparation.
+- WordPress privacy erasure removes terminal personal payloads, retaining duplicate-settlement
+  reservations; unresolved operations require reconciliation first. Do not claim retained
+  identifiers are anonymous.

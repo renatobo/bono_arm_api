@@ -61,6 +61,11 @@ final class RenewalsTest extends WP_UnitTestCase {
 		$arm_restriction = new class {
 			public function arm_check_content_hasaccess( $plans, $type ) { return ! array_diff( $plans, (array) get_user_meta( get_current_user_id(), 'arm_user_plan_ids', true ) ); }
 		};
+		if ( getenv( 'BONO_ARMEMBER_SOURCE' ) ) {
+			$arm_subscription_plans = new Bono_Native_Subscriptions( $arm_subscription_plans );
+			$arm_restriction = new Bono_Native_Restriction();
+		}
+
 		$wpdb->insert( $wpdb->prefix . 'arm_members', array( 'arm_user_id' => $this->member, 'arm_primary_status' => 2, 'arm_secondary_status' => 0 ) );
 		$year = (int) gmdate( 'Y' );
 		$start = strtotime( ( $year - 1 ) . '-01-01' );
@@ -105,6 +110,148 @@ final class RenewalsTest extends WP_UnitTestCase {
 		$request = new WP_REST_Request( 'GET', '/bono_armember/v2/renewals/' . wp_generate_uuid4() );
 		$this->assertSame( 404, rest_do_request( $request )->get_status() );
 		$this->assertFalse( get_option( 'bono_arm_api_renewals_schema' ) );
+	}
+
+	private function resolve_request( $id, $cycle, $payment ) {
+		$request = new WP_REST_Request( 'POST', '/bono_armember/v2/renewals/' . $id . '/resolve' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( wp_json_encode( array( 'confirm_reconciled' => true, 'cycle_stands' => $cycle, 'payment_stands' => $payment ) ) );
+		return rest_do_request( $request );
+	}
+
+	public function test_resolution_is_audited_and_preserves_payment_reservations() {
+		$body = $this->commit_body();
+		$fail = static function () { throw new RuntimeException( 'Private hook details' ); };
+		add_action( 'arm_before_add_transaction', $fail );
+		$response = $this->request( $body );
+		remove_action( 'arm_before_add_transaction', $fail );
+		$id = $response->get_data()['data']['operation_id'];
+		$before = $this->repository->get( $id );
+		$this->assertSame( 200, $this->resolve_request( $id, false, false )->get_status() );
+		$row = $this->repository->get( $id );
+		$this->assertSame( 'resolved', $row['state'] );
+		$this->assertSame( $this->actor, $row['payload']['resolution']['actor_id'] );
+		$this->assertSame( $before['payment_hash'], $row['payment_hash'] );
+		$this->assertNotSame( $before['cycle_hash'], $row['cycle_hash'] );
+		$this->assertSame( 200, $this->resolve_request( $id, false, false )->get_status() );
+		$this->assertSame( 409, $this->resolve_request( $id, true, true )->get_status() );
+		$this->assertSame( 'bono_arm_api_operation_resolved', $this->request( $body )->get_data()['code'] );
+		$this->body['payment']['reference'] .= '-replacement';
+		$this->assertSame( 200, $this->request()->get_status() );
+		wp_set_current_user( $this->member );
+		$this->assertSame( 403, $this->resolve_request( $id, false, false )->get_status() );
+	}
+
+	public function test_live_retry_and_resolution_return_conflict_then_interruption_requires_repair() {
+		global $wpdb;
+		$body = $this->commit_body();
+		$fail = static function () { throw new RuntimeException( 'Interrupted' ); };
+		add_action( 'arm_before_add_transaction', $fail );
+		$response = $this->request( $body );
+		remove_action( 'arm_before_add_transaction', $fail );
+		$id = $response->get_data()['data']['operation_id'];
+		$row = $this->repository->get( $id );
+		$this->repository->save( $id, 'in_progress', $row['payload'] );
+		$other = new wpdb( DB_USER, DB_PASSWORD, DB_NAME, DB_HOST );
+		$name = 'bono:' . substr( hash( 'sha256', DB_NAME . ':' . $wpdb->prefix . ':member:' . $this->member ), 0, 58 );
+		$this->assertSame( '1', (string) $other->get_var( $other->prepare( 'SELECT GET_LOCK(%s, 0)', $name ) ) );
+		try {
+			$retry = $this->request( $body );
+			$this->assertSame( 409, $retry->get_status() );
+			$retry = apply_filters( 'rest_post_dispatch', $retry, rest_get_server(), new WP_REST_Request( 'POST', '/bono_armember/v2/members/' . $this->member . '/renewals' ) );
+			$this->assertSame( '5', $retry->get_headers()['Retry-After'] );
+			$this->assertSame( 409, $this->resolve_request( $id, false, false )->get_status() );
+		} finally {
+			$other->get_var( $other->prepare( 'SELECT RELEASE_LOCK(%s)', $name ) );
+			$other->close();
+		}
+		$this->assertSame( 503, $this->request( $body )->get_status() );
+		$this->assertSame( 200, $this->resolve_request( $id, false, false )->get_status() );
+	}
+
+	public function test_verification_names_roles_failure_without_exception_message() {
+		$body = $this->commit_body();
+		$change = function () { ( new WP_User( $this->member ) )->set_role( 'author' ); };
+		add_action( 'arm_after_add_transaction', $change );
+		$response = $this->request( $body );
+		remove_action( 'arm_after_add_transaction', $change );
+		$this->assertSame( 503, $response->get_status() );
+		$row = $this->repository->get( $response->get_data()['data']['operation_id'] );
+		$this->assertSame( 'roles', $row['payload']['failure']['stage'] );
+		$this->assertSame( 'RuntimeException', $row['payload']['failure']['exception_class'] );
+	}
+
+	public function test_delegated_operator_cannot_renew_self() {
+		$user = new WP_User( $this->member );
+		$user->add_cap( Capabilities::RENEW_MEMBERS );
+		$user->add_cap( Capabilities::ACTIVATE_MEMBERS );
+		wp_set_current_user( $this->member );
+		$this->assertSame( 'self_renewal', $this->request()->get_data()['data']['reason'] );
+	}
+
+	public function test_privacy_erasure_preserves_reservations_and_blocks_replay() {
+		$body = $this->commit_body();
+		$response = $this->request( $body );
+		$id = $response->get_data()['operation_id'];
+		$before = $this->repository->get( $id );
+		$email = get_userdata( $this->member )->user_email;
+		$export = BonoArmApi\Privacy::export( $email );
+		$this->assertCount( 1, $export['data'] );
+		$erase = BonoArmApi\Privacy::erase( $email );
+		$this->assertTrue( $erase['items_removed'] );
+		$row = $this->repository->get( $id );
+		$this->assertSame( '0', (string) $row['user_id'] );
+		$this->assertSame( array( 'privacy_erased' => true ), $row['payload'] );
+		$this->assertSame( $before['payment_hash'], $row['payment_hash'] );
+		$this->assertSame( $before['cycle_hash'], $row['cycle_hash'] );
+		$this->assertSame( 410, $this->request( $body )->get_status() );
+	}
+
+	public function test_privacy_retains_unresolved_operations() {
+		$body = $this->commit_body();
+		$fail = static function () { throw new RuntimeException( 'Interrupted' ); };
+		add_action( 'arm_before_add_transaction', $fail );
+		$response = $this->request( $body );
+		remove_action( 'arm_before_add_transaction', $fail );
+		$id = $response->get_data()['data']['operation_id'];
+		$before = $this->repository->get( $id );
+		$result = BonoArmApi\Privacy::erase( get_userdata( $this->member )->user_email );
+		$this->assertFalse( $result['items_removed'] );
+		$this->assertTrue( $result['items_retained'] );
+		$this->assertSame( $before, $this->repository->get( $id ) );
+	}
+
+	public function test_entitlement_exception_restores_authenticated_actor() {
+		global $arm_restriction;
+		$original = $arm_restriction;
+		$arm_restriction = new class( $this->member ) {
+			private $member;
+			public function __construct( $member ) { $this->member = $member; }
+			public function arm_check_content_hasaccess( $plans, $type ) {
+				if ( get_current_user_id() !== $this->member ) { throw new LogicException( 'Wrong entitlement identity' ); }
+				throw new RuntimeException( 'Entitlement hook failure' );
+			}
+		};
+		try {
+			$this->assertSame( 503, $this->request()->get_status() );
+			$this->assertSame( $this->actor, get_current_user_id() );
+		} finally { $arm_restriction = $original; }
+	}
+
+	public function test_resolve_validation_permissions_and_completed_state() {
+		$body = $this->commit_body();
+		$id = $this->request( $body )->get_data()['operation_id'];
+		$this->assertSame( 409, $this->resolve_request( $id, true, true )->get_status() );
+		$this->assertSame( 404, $this->resolve_request( wp_generate_uuid4(), false, false )->get_status() );
+		$request = new WP_REST_Request( 'POST', '/bono_armember/v2/renewals/' . $id . '/resolve' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( '{"cycle_stands":true,"payment_stands":true}' );
+		$this->assertSame( 400, rest_do_request( $request )->get_status() );
+		$user = new WP_User( $this->member );
+		$user->add_cap( Capabilities::RENEW_MEMBERS );
+		$user->add_cap( Capabilities::ACTIVATE_MEMBERS );
+		wp_set_current_user( $this->member );
+		$this->assertSame( 403, $this->resolve_request( $id, true, true )->get_status() );
 	}
 
 	private function request( $body = null, $key = 'test-idempotency-key-1' ) {
@@ -389,9 +536,11 @@ final class RenewalsTest extends WP_UnitTestCase {
 		$response = $this->request( $body );
 		remove_filter( $hook, $fail, 10 );
 		$this->assertSame( 503, $response->get_status() );
-		$this->assertSame( 0, $this->count_payments() );
+		$this->assertSame( 'cycle' === $stage ? 1 : 0, $this->count_payments() );
+		$this->assertSame( 1, (int) get_user_meta( $this->member, 'arm_user_plan_12', true )['arm_completed_recurring'] );
 		$this->assertSame( 503, $this->request( $body )->get_status() );
-		$this->assertSame( 0, $this->count_payments() );
+		$this->assertSame( 'cycle' === $stage ? 1 : 0, $this->count_payments() );
+		$this->assertSame( 1, (int) get_user_meta( $this->member, 'arm_user_plan_12', true )['arm_completed_recurring'] );
 	}
 	public function write_failure_stages() { return array( array( 'cycle' ), array( 'payment' ) ); }
 

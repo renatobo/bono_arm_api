@@ -42,6 +42,19 @@ final class BadgesTest extends WP_UnitTestCase {
 		return rest_get_server()->dispatch( new WP_REST_Request( $method, $route ) );
 	}
 
+	public function test_native_reader_recognizes_api_storage() {
+		if ( ! class_exists( 'Bono_Native_Badge_Reader' ) ) { $this->markTestSkipped( 'Licensed source needed for native badge read-back.' ); }
+		$member = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$catalog = rest_do_request( new WP_REST_Request( 'GET', '/bono_armember/v2/badges' ) )->get_data();
+		$id = $catalog['badges'][0]['badge_id'];
+		$route = '/bono_armember/v2/members/' . $member . '/badges/' . $id;
+		$this->assertSame( 200, rest_do_request( new WP_REST_Request( 'PUT', $route ) )->get_status() );
+		$reader = new Bono_Native_Badge_Reader();
+		$this->assertSame( array( array( 'admin' => '1' ) ), $reader->arm_get_user_achievements_data( $member )[$id] );
+		$this->assertSame( 200, rest_do_request( new WP_REST_Request( 'DELETE', $route ) )->get_status() );
+		$this->assertArrayNotHasKey( $id, $reader->arm_get_user_achievements_data( $member ) );
+	}
+
 	public function test_catalog_assignment_removal_and_idempotency_preserve_other_awards() {
 		$other = array( 8 => array( 22 => array( 'plans' => 12 ) ) );
 		update_user_meta( $this->member, 'arm_achievements', maybe_serialize( $other ) );

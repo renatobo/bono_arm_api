@@ -3,7 +3,7 @@ Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 2.3.0-beta.3
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -300,3 +300,45 @@ Enable Badge endpoints in Settings > Bono API. Disabled by default; requires ARM
 GET /wp-json/bono_armember/v2/badges lists available definitions (badge_id, name, icon). GET /wp-json/bono_armember/v2/members/{user_id}/badges lists stored assignments, including automatic awards whose display may be suppressed. PUT /wp-json/bono_armember/v2/members/{user_id}/badges/{badge_id} assigns a badge if absent. DELETE the same route removes every award of that badge for this user. Neither mutation needs a body. Both return 200 with user_id, badge_id, assigned and changed; repeats return changed=false. PUT treats an existing automatic award as assigned.
 
 Removal preserves other badges and the definition. Automatic rules may award it again. Membership, roles, payments and award rules are unchanged. API writes share the member lock; avoid concurrent native admin/cron edits. Multisite targets must belong to the current site. All responses use Cache-Control: no-store. Errors: 400 invalid IDs, 401/403 authentication/permission, 404 user/badge missing, 409 malformed state or conflicting/failed write, 503 disabled/unavailable. See the GitHub README and v2 OpenAPI/Postman contracts.
+
+
+== Renewal reconciliation and privacy ==
+
+`POST /wp-json/bono_armember/v2/renewals/{operation_id}/resolve` records an
+operator's reconciliation of an interrupted or failed operation. It requires
+`manage_options` plus both renewal and activation capabilities, even when mutation
+toggles are off. Inspect the operation and ARMember payment and subscription state,
+perform any necessary repair, then send JSON:
+
+```json
+{"confirm_reconciled":true,"cycle_stands":true,"payment_stands":true}
+```
+
+The booleans attest to the state after inspection or external repair; this endpoint
+never repairs ARMember or replays writes. It records the operator ID and UTC time,
+and changes the journal state to `resolved`. A live member lock returns 409 with
+`Retry-After: 5`. An identical resolution is idempotent; contradictory resolutions
+and attempts to resolve a completed operation return 409. The old idempotency key
+returns 409 `bono_arm_api_operation_resolved` and cannot execute again.
+
+Payment/reference reservations are always retained, including a payment an operator
+has reversed. If `cycle_stands` is false, only the cycle reservation is released,
+allowing a fresh preview with a new, independently verified payment reference after
+repair. If the payment stands but the cycle does not, repair entitlement externally;
+do not record the same money again under another reference. The endpoint trusts the
+explicit administrator attestation; it is not an automatic reconciliation engine.
+
+Payment is recorded and validated before entitlement is extended. Verification
+failures record the named checkpoint and exception class, never exception messages.
+
+WordPress privacy tools export member journal details and operator audit records.
+Erasure removes personal payloads from completed/resolved member operations and
+removes the requesting operator's ID from terminal audit records. Reservation hashes,
+payment-log IDs, plan IDs and timestamps remain to prevent duplicate settlement;
+these can still link to ARMember records and are not claimed to be anonymous.
+Unresolved/locked operations retain details until reconciliation. ARMember's own
+payment records are managed separately. Erased results return 410 on replay and
+cannot execute again. Export/erase requests identify existing WordPress users by
+email; process privacy requests before deleting their account. Uninstall retains
+the journal. Site operators must define retention and separately handle sponsor
+requests, since sponsor names have no email identity in this journal.

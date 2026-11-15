@@ -38,6 +38,8 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_action( 'wp_abilities_api_categories_init', array( 'BonoArmApi\\Abilities', 'register_category' ) );
 		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
+		add_filter( 'wp_privacy_personal_data_exporters', array( 'BonoArmApi\\Privacy', 'exporters' ) );
+		add_filter( 'wp_privacy_personal_data_erasers', array( 'BonoArmApi\\Privacy', 'erasers' ) );
 		add_action( 'admin_init', array( 'BonoArmApi\\Privacy', 'register_policy_content' ) );
 		add_action( 'admin_notices', array( 'BonoArmApi\\Dependency', 'render_admin_notice' ) );
 		add_action( 'activated_plugin', array( $this, 'flush_schema_cache' ) );

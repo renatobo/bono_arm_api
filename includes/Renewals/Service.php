@@ -154,7 +154,7 @@ final class Service {
 				// Keep errors bounded and omit third-party exception text, which can contain secrets.
 				$payload['failure'] = array(
 					'exception_class' => get_class( $exception ),
-					'stage'           => 'verification_or_write',
+					'stage'           => $payload['steps']['verification'] ?? 'write',
 				);
 				$this->repository->save( $id, 'needs_reconciliation', $payload );
 				clean_user_cache( $user_id );
@@ -162,6 +162,43 @@ final class Service {
 			}
 		} finally {
 			$this->repository->unlock( $invoice_lock );
+		}
+	}
+
+	/** Operator attestation after external repair; never repeats vendor writes. */
+	public function resolve( $id, $cycle_stands, $payment_stands ) {
+		$status = $this->status( $id );
+		if ( is_wp_error( $status ) ) {
+			return $status;
+		}
+		$lock = $this->repository->lock( 'member:' . $status['user_id'] );
+		if ( ! $lock ) {
+			return $this->error( 'renewal_in_progress', 409, $id );
+		}
+		try {
+			$row        = $this->repository->get( $id );
+			$resolution = array(
+				'actor_id'       => get_current_user_id(),
+				'resolved_at'    => gmdate( 'Y-m-d H:i:s' ),
+				'cycle_stands'   => $cycle_stands,
+				'payment_stands' => $payment_stands,
+			);
+			if ( ! empty( $row['payload']['privacy_erased'] ) ) {
+				return $this->error( 'operation_erased', 410, $id );
+			}
+			if ( 'resolved' === $row['state'] ) {
+				$previous = $row['payload']['resolution'];
+				return $previous['cycle_stands'] === $cycle_stands && $previous['payment_stands'] === $payment_stands ? $this->status( $id ) : $this->error( 'resolution_conflict', 409, $id );
+			}
+			if ( ! in_array( $row['state'], array( 'in_progress', 'needs_reconciliation' ), true ) ) {
+				return $this->error( 'resolution_conflict', 409, $id );
+			}
+			if ( ! $this->repository->resolve( $row, $resolution ) ) {
+				return $this->error( 'renewal_needs_reconciliation', 503, $id );
+			}
+			return $this->status( $id );
+		} finally {
+			$this->repository->unlock( $lock );
 		}
 	}
 
@@ -196,6 +233,12 @@ final class Service {
 			} finally {
 				$this->repository->unlock( $lock );
 			}
+		}
+		if ( ! empty( $row['payload']['privacy_erased'] ) ) {
+			return $this->error( 'operation_erased', 410, $row['operation_id'] );
+		}
+		if ( 'resolved' === $row['state'] ) {
+			return $this->error( 'operation_resolved', 409, $row['operation_id'] );
 		}
 		if ( 'completed' !== $row['state'] ) {
 			return $this->error( 'renewal_needs_reconciliation', 503, $row['operation_id'], $row['payload']['steps'] );

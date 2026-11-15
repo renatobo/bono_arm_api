@@ -30,3 +30,7 @@ site's ARMember hooks, subscription-table synchronization, notifications, tax se
 rules in staging. Never run the sponsor payment examples against production as a smoke test.
 
 `BadgesTest.php` uses a small badge catalog double and the real WordPress user metadata APIs. It verifies native-style serialized manual assignments, preservation of other awards, idempotent add/remove, malformed state, access/feature/dependency guards, concurrent metadata updates and no-store headers. User-list results describe stored assignments rather than ARMember display eligibility.
+
+Native mode also executes the Pro 8.1.1 subscription lookup, entitlement restriction method,
+and badge achievement reader. Badge read-back checks API-written storage through the native
+reader. This still does not load the entire plugin or third-party hooks.

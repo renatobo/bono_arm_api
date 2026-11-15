@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-14T00:13:36+00:00\n"
+"POT-Creation-Date: 2026-11-15T21:47:10+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: bono-arm-api\n"
@@ -18,7 +18,7 @@ msgstr ""
 #: bono-arm-api.php
 #: includes/Abilities.php:16
 #: includes/Admin/Settings_Page.php:26
-#: includes/Privacy.php:18
+#: includes/Privacy.php:111
 msgid "Bono API for ARMember"
 msgstr ""
 
@@ -141,6 +141,26 @@ msgstr ""
 msgid "The API refuses to delete users who can manage site options. Developers can change this with the bono_arm_api_can_delete_member filter."
 msgstr ""
 
+#: includes/ARMember/Badge_Gateway.php:41
+msgid "Member not found."
+msgstr ""
+
+#: includes/ARMember/Badge_Gateway.php:63
+msgid "Badge not found."
+msgstr ""
+
+#: includes/ARMember/Badge_Gateway.php:117
+msgid "Badge assignment data is invalid."
+msgstr ""
+
+#: includes/ARMember/Badge_Gateway.php:129
+msgid "Badge assignments changed or could not be saved. Read the current state before retrying."
+msgstr ""
+
+#: includes/ARMember/Badge_Gateway.php:133
+msgid "ARMember badge support is unavailable."
+msgstr ""
+
 #: includes/ARMember/Gateway.php:21
 msgid "ARMember member functions are not available."
 msgstr ""
@@ -178,7 +198,7 @@ msgstr ""
 msgid "This account cannot be deleted through the API."
 msgstr ""
 
-#: includes/ARMember/Renewal_Gateway.php:460
+#: includes/ARMember/Renewal_Gateway.php:509
 msgid "The subscription or payment does not meet the sponsored renewal requirements."
 msgstr ""
 
@@ -195,15 +215,33 @@ msgstr ""
 msgid "Unable to load ARMember payment records."
 msgstr ""
 
-#: includes/Plugin.php:102
+#: includes/Plugin.php:104
 msgid "Settings"
 msgstr ""
 
-#: includes/Privacy.php:14
+#: includes/Privacy.php:11
+#: includes/Privacy.php:19
+#: includes/Privacy.php:35
+msgid "Sponsored renewals"
+msgstr ""
+
+#: includes/Privacy.php:39
+msgid "Renewal journal"
+msgstr ""
+
+#: includes/Privacy.php:71
+msgid "The erasure session expired. Restart the privacy erasure request."
+msgstr ""
+
+#: includes/Privacy.php:97
+msgid "Payment and cycle reservation identifiers are retained to prevent duplicate settlement. Unresolved or locked operations retain their details until reconciliation. ARMember payment records are managed separately."
+msgstr ""
+
+#: includes/Privacy.php:107
 msgid "Bono API for ARMember adds authenticated REST API endpoints for ARMember payment and member administration data. Depending on the endpoint and requested context, responses can include WordPress usernames, email addresses, payment identifiers, payment amounts, dates, and administrative notes."
 msgstr ""
 
-#: includes/Privacy.php:15
+#: includes/Privacy.php:108
 msgid "The plugin stores settings, capability grant history, and a durable sponsored-renewal journal containing operator and member IDs, sponsor payment details, cycle state, and write outcomes. Renewal reservations are retained across uninstall to prevent duplicate settlement after reinstall. It does not send data to a third party. Site operators are responsible for journal access, reconciliation, retention, and onward processing performed by API clients."
 msgstr ""
 
@@ -211,11 +249,11 @@ msgstr ""
 msgid "A commit requires the preview token."
 msgstr ""
 
-#: includes/Renewals/Service.php:171
+#: includes/Renewals/Service.php:208
 msgid "Renewal operation not found."
 msgstr ""
 
-#: includes/Renewals/Service.php:200
+#: includes/Renewals/Service.php:254
 msgid "The renewal could not proceed. Check the error code and operation status before retrying."
 msgstr ""
 
@@ -242,34 +280,15 @@ msgstr ""
 msgid "You cannot delete the account used to authenticate this request."
 msgstr ""
 
-#: includes/REST/V2_Badges_Controller.php:64
+#: includes/REST/V2_Badges_Controller.php:63
 #: includes/REST/V2_Members_Controller.php:109
-#: includes/REST/V2_Renewals_Controller.php:55
+#: includes/REST/V2_Renewals_Controller.php:74
+#: includes/REST/V2_Renewals_Controller.php:78
 msgid "You are not allowed to perform this action."
 msgstr ""
 
-#: includes/REST/V2_Badges_Controller.php:79
+#: includes/REST/V2_Badges_Controller.php:77
 msgid "Badge endpoints are disabled."
-msgstr ""
-
-#: includes/REST/V2_Badges_Controller.php:108
-msgid "Member not found."
-msgstr ""
-
-#: includes/REST/V2_Badges_Controller.php:130
-msgid "Badge not found."
-msgstr ""
-
-#: includes/REST/V2_Badges_Controller.php:190
-msgid "Badge assignment data is invalid."
-msgstr ""
-
-#: includes/REST/V2_Badges_Controller.php:202
-msgid "Badge assignments changed or could not be saved. Read the current state before retrying."
-msgstr ""
-
-#: includes/REST/V2_Badges_Controller.php:206
-msgid "ARMember badge support is unavailable."
 msgstr ""
 
 #: includes/REST/V2_Members_Controller.php:87
@@ -300,14 +319,14 @@ msgstr ""
 msgid "Limit results to an ARMember plan."
 msgstr ""
 
-#: includes/REST/V2_Renewals_Controller.php:77
+#: includes/REST/V2_Renewals_Controller.php:100
 msgid "Operator-confirmed cause of the target plan suspension. Does not override unrelated restrictions."
 msgstr ""
 
-#: includes/REST/V2_Renewals_Controller.php:211
+#: includes/REST/V2_Renewals_Controller.php:234
 msgid "Sponsored renewal and member activation must both be enabled."
 msgstr ""
 
-#: includes/REST/V2_Renewals_Controller.php:215
+#: includes/REST/V2_Renewals_Controller.php:238
 msgid "Invalid sponsored renewal command, preview token, or idempotency key."
 msgstr ""

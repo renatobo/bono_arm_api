@@ -69,6 +69,7 @@ class Renewal_Gateway {
 			'subscription_cancelled'  => empty( $data['arm_cencelled_plan'] ),
 			'plan_change_pending'     => empty( $data['arm_change_plan_to'] ),
 			'account_restricted'      => in_array( $primary, array( 1, 2 ), true ) && in_array( $secondary, array( 0, 5 ), true ),
+			'self_renewal'            => get_current_user_id() !== (int) $user_id,
 			'administrator_member'    => ! user_can( $user, 'manage_options' ),
 		);
 		foreach ( $requirements as $reason => $supported ) {
@@ -260,24 +261,10 @@ class Renewal_Gateway {
 		$plan_id = $command['plan_id'];
 		$payment = $command['payment'];
 		$inserts = 0;
-		$guard   = static function ( $query ) use ( &$inserts, $payment ) {
-			global $wpdb;
-			if ( preg_match( '/^\s*INSERT\s+INTO\s+`?' . preg_quote( $wpdb->prefix . 'arm_payment_log', '/' ) . '`?\s*\(/i', $query ) ) {
-				++$inserts;
-				// Block the vendor primitive’s unescaped retry SQL and extra payment insertions.
-				if ( $inserts > ( 'create' === $payment['mode'] ? 1 : 0 ) || false === strpos( $query, '`' . $wpdb->prefix . 'arm_payment_log`' ) ) {
-					return '';
-				}
-			}
-			return $query;
-		};
+		$guard   = $this->repository->payment_insert_guard( $inserts, 'create' === $payment['mode'] ? 1 : 0 );
 		add_filter( 'query', $guard, PHP_INT_MAX );
 		add_filter( 'pre_wp_mail', array( $this, 'suppress_mail' ), PHP_INT_MAX );
 		try {
-			$checkpoint( 'cycle', 'intent' );
-			arm_update_user_meta( $user_id, 'arm_user_plan_' . $plan_id, $projection['data'] );
-			arm_update_user_meta( $user_id, 'arm_user_suspended_plan_ids', $projection['suspended'] );
-			$checkpoint( 'cycle', 'written' );
 			$checkpoint( 'payment', 'intent' );
 			if ( 'create' === $payment['mode'] ) {
 				$metadata = array(
@@ -324,6 +311,14 @@ class Renewal_Gateway {
 					'created'        => 'create' === $payment['mode'],
 				)
 			);
+			if ( ! $this->verify_payment_details( $this->repository->payment( $log_id ), $command, $projection, $operation_id ) ) {
+				$checkpoint( 'verification', 'payment_before_cycle' );
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'cycle', 'intent' );
+			arm_update_user_meta( $user_id, 'arm_user_plan_' . $plan_id, $projection['data'] );
+			arm_update_user_meta( $user_id, 'arm_user_suspended_plan_ids', $projection['suspended'] );
+			$checkpoint( 'cycle', 'written' );
 			$checkpoint( 'activation', 'intent' );
 			if ( 1 !== $projection['public']['before']['primary_status'] || 0 !== $projection['public']['before']['secondary_status'] ) {
 				arm_set_member_status( $user_id, 1 );
@@ -334,9 +329,63 @@ class Renewal_Gateway {
 			$status           = $this->repository->member_status( $user_id );
 			$record           = $this->repository->payment( $log_id );
 			$payment_verified = $this->verify_payment_details( $record, $command, $projection, $operation_id );
-			if ( ! $payment_verified || $inserts > ( 'create' === $payment['mode'] ? 1 : 0 ) || $actual !== $projection['data'] || ! is_array( $status ) || get_user_by( 'ID', $user_id )->roles !== $projection['snapshot']['roles'] || arm_get_user_meta( $user_id, 'arm_user_plan_ids', true ) !== $projection['snapshot']['assigned'] || array_values( (array) arm_get_user_meta( $user_id, 'arm_user_suspended_plan_ids', true ) ) !== $projection['suspended'] || 1 !== (int) $status['arm_primary_status'] || 0 !== (int) $status['arm_secondary_status'] || ! $this->matches_payment( $record, $user_id, $plan_id, $projection['public']['payment']['amount'], $projection['public']['payment']['currency'] ) || (int) $record['arm_invoice_id'] < 1 || $record['arm_transaction_id'] !== $projection['public']['payment']['reference'] || (int) $arm_members_class->arm_get_next_due_date( $user_id, $plan_id, false, $actual['arm_payment_cycle'] ) !== (int) $actual['arm_next_due_payment'] || ! $this->access( $user_id, $plan_id, $actual, $projection['suspended'] ) ) {
+			$checkpoint( 'verification', 'payment_details' );
+			if ( ! $payment_verified ) {
 				return $this->error( 'renewal_needs_reconciliation', 503 );
 			}
+			$checkpoint( 'verification', 'payment_insert_count' );
+			if ( $inserts > ( 'create' === $payment['mode'] ? 1 : 0 ) ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'plan_data' );
+			if ( $actual !== $projection['data'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'member_status_exists' );
+			if ( ! is_array( $status ) ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'roles' );
+			if ( get_user_by( 'ID', $user_id )->roles !== $projection['snapshot']['roles'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'assigned_plans' );
+			if ( arm_get_user_meta( $user_id, 'arm_user_plan_ids', true ) !== $projection['snapshot']['assigned'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'suspended_plans' );
+			if ( array_values( (array) arm_get_user_meta( $user_id, 'arm_user_suspended_plan_ids', true ) ) !== $projection['suspended'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'primary_status' );
+			if ( 1 !== (int) $status['arm_primary_status'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'secondary_status' );
+			if ( 0 !== (int) $status['arm_secondary_status'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'payment_identity' );
+			if ( ! $this->matches_payment( $record, $user_id, $plan_id, $projection['public']['payment']['amount'], $projection['public']['payment']['currency'] ) ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'invoice_id' );
+			if ( (int) $record['arm_invoice_id'] < 1 ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'payment_reference' );
+			if ( $record['arm_transaction_id'] !== $projection['public']['payment']['reference'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'next_due_date' );
+			if ( (int) $arm_members_class->arm_get_next_due_date( $user_id, $plan_id, false, $actual['arm_payment_cycle'] ) !== (int) $actual['arm_next_due_payment'] ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+			$checkpoint( 'verification', 'entitlement' );
+			if ( ! $this->access( $user_id, $plan_id, $actual, $projection['suspended'] ) ) {
+				return $this->error( 'renewal_needs_reconciliation', 503 );
+			}
+
 			return array(
 				'user_id'         => $user_id,
 				'plan_id'         => $plan_id,
