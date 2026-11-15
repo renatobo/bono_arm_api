@@ -7,7 +7,7 @@
 
 WordPress plugin that exposes protected REST API endpoints for ARMember payment logs, admin-triggered member activation, and guarded member deletion.
 
-Current version: `2.3.0-beta.4`
+Current version: `2.3.0`
 
 ## Quick start
 
@@ -417,7 +417,7 @@ mail remains enabled. Mailchimp, spreadsheets and caller-owned email remain outs
 
 See [the complete contract](docs/renewal-api-spec.md), the updated
 [v2 OpenAPI specification](docs/bono-arm-api-openapi-v2.json), and the Postman preview/commit/status
-examples. This beta is intended for staging validation before production enablement.
+examples. Validate installed ARMember hooks and renewal lifecycle in staging before enabling renewal mutations in production.
 
 For a suspended target whose nonpayment cause has been explicitly confirmed by the operator,
 send top-level `"suspension_reason": "nonpayment"` on preview and repeat it unchanged on

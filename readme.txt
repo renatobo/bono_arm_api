@@ -3,7 +3,7 @@ Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 2.3.0-beta.4
+Stable tag: 2.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -104,7 +104,7 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
-= 2.3.0-beta.4 =
+= 2.3.0 =
 Renewal requests now require payer_name; payment extras use bono_renewal. Update clients and obtain fresh previews. Includes audited reconciliation and privacy tools. Settings is now ARMember BonoAPI.
 
 = 2.3.0-beta.3 =
@@ -173,7 +173,7 @@ The API responds with `status: 0` and a message indicating that ARMember must be
 
 == Changelog ==
 
-= 2.3.0-beta.4 =
+= 2.3.0 =
 * Added audited renewal reconciliation, named verification diagnostics, privacy export/erasure, and payment-first settlement.
 * Renamed the renewal API payer field and metadata; synchronized contracts and client guidance.
 * Matched the settings page to the WPBono plugin family with a banner and responsive cards.
