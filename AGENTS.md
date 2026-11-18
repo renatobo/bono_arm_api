@@ -24,6 +24,7 @@ Guidance for coding agents and contributors working in this repository.
 - Secondary distribution channel: WordPress.org, when that listing is available.
 - Keep Git Updater-specific plugin header metadata in `bono-arm-api.php`.
 - Production updates use `Primary Branch: stable` and `Release Asset: true`. Only the release workflow advances `stable`, after downloading and verifying the published assets. Development/version preparation stays on `main`.
+- Branch migration uses `gu_config_pre_process` with a slug-indexed array of repository objects. Do not use `gu_fix_repo_slug`: newer Git Updater versions call it before owner/branch/type are available. Test against the pinned upstream implementations in CI, not invented hook payloads.
 - Keep `Tested up to` only in `readme.txt`, never in the PHP plugin header.
 - Keep Git Updater and distribution-channel UI/documentation copy consistent across `bono-arm-api.php`, `README.md`, and `readme.txt`.
 - Do not describe WordPress.org as the default or primary update path unless explicitly requested.
