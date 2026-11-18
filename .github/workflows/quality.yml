@@ -95,6 +95,30 @@ jobs:
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
 
+      - name: Check out legacy Git Updater integration
+        if: matrix.php != '7.4'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: afragen/git-updater
+          ref: 1610ba213fd52e38c3cb2fe5c9295f67e5980cdc # 14.5.0
+          path: temp/git-updater-legacy
+          persist-credentials: false
+      - name: Check out current Git Updater integration
+        if: matrix.php != '7.4'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: afragen/git-updater
+          ref: 3ec0119b0d5e2edbedca05063e1f274347750e11 # inspected develop snapshot
+          path: temp/git-updater-current
+          persist-credentials: false
+      - name: Test actual upstream metadata and update-generation hooks
+        if: matrix.php != '7.4'
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+        run: |
+          BONO_GIT_UPDATER_DIR="$PWD/temp/git-updater-legacy" vendor/bin/phpunit .github/tests/GitUpdaterIntegrationTest.php
+          BONO_GIT_UPDATER_DIR="$PWD/temp/git-updater-current" vendor/bin/phpunit .github/tests/GitUpdaterIntegrationTest.php
+
   plugin-check:
     permissions:
       contents: read

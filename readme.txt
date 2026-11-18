@@ -3,7 +3,7 @@ Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 2.3.1
+Stable tag: 2.3.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -105,6 +105,9 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 
 == Upgrade Notice ==
 
+= 2.3.2 =
+Corrects production branch migration for newer Git Updater versions. If a cached source download fails with Unsupported Media Type, refresh Git Updater data or upload this release ZIP and replace the existing plugin.
+
 = 2.3.1 =
 Repairs the repeated 2.3.0 update offer. Git Updater now follows verified releases on stable. Includes the renewal and badge APIs from 2.3.0; review its upgrade notes when upgrading from 2.2.0.
 
@@ -176,6 +179,10 @@ ARMember does not index `arm_invoice_id`, so each request scans the whole paymen
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 2.3.2 =
+* Migrates the resolved Git Updater repository objects before remote checks and update generation.
+* Tests the integration against pinned legacy and current upstream Git Updater implementations.
 
 = 2.3.1 =
 * Fixed the Plugin Check header error that prevented 2.3.0 publication.

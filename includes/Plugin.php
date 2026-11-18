@@ -33,7 +33,7 @@ final class Plugin {
 		$this->repository = new Payment_Repository();
 		$this->gateway    = new Gateway( $this->repository );
 
-		add_filter( 'gu_fix_repo_slug', array( $this, 'update_branch' ) );
+		add_filter( 'gu_config_pre_process', array( $this, 'update_branches' ) );
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( 'BonoArmApi\\Capabilities', 'maybe_upgrade' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
@@ -52,28 +52,37 @@ final class Plugin {
 	}
 
 	/**
-	 * Migrate Git Updater's cached former production branch to verified releases.
-	 * Other repositories and explicitly selected test branches remain untouched.
+	 * Migrate resolved Git Updater configurations to verified production releases.
+	 * The earlier gu_fix_repo_slug hook lacks branch/owner fields in newer versions.
 	 *
-	 * @param array $repo Git Updater repository configuration.
+	 * @param array $repos Git Updater repository objects, indexed by repository slug.
 	 * @return array
 	 */
-	public function update_branch( $repo ) {
-		if ( 'bono_arm_api' === ( $repo['slug'] ?? '' )
-			&& 'renatobo' === ( $repo['owner'] ?? '' )
-			&& 'plugin' === ( $repo['type'] ?? '' )
-			&& 'stable' === ( $repo['primary_branch'] ?? '' )
-			&& 'main' === ( $repo['branch'] ?? '' ) ) {
-			$repo['branch'] = 'stable';
-			// Git Updater 14 stores this selection separately from the header.
-			$options = get_site_option( 'git_updater', array() );
+	public function update_branches( $repos ) {
+		if ( ! is_array( $repos ) ) {
+			return $repos;
+		}
+
+		foreach ( $repos as $repo ) {
+			if ( ! is_object( $repo )
+				|| 'bono_arm_api' !== ( $repo->slug ?? '' )
+				|| 'renatobo' !== ( $repo->owner ?? '' )
+				|| 'plugin' !== ( $repo->type ?? '' )
+				|| 'stable' !== ( $repo->primary_branch ?? '' )
+				|| 'main' !== ( $repo->branch ?? '' ) ) {
+				continue;
+			}
+
+			// Mutate the shared object so the remote fetch and update transient agree.
+			$repo->branch = 'stable';
+			$options      = get_site_option( 'git_updater', array() );
 			if ( is_array( $options ) && 'main' === ( $options['current_branch_bono_arm_api'] ?? '' ) ) {
 				$options['current_branch_bono_arm_api'] = 'stable';
 				update_site_option( 'git_updater', $options );
 			}
 		}
 
-		return $repo;
+		return $repos;
 	}
 
 	public function load_textdomain() {
