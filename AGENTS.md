@@ -23,6 +23,8 @@ Guidance for coding agents and contributors working in this repository.
 - Primary distribution channel: GitHub releases via Git Updater.
 - Secondary distribution channel: WordPress.org, when that listing is available.
 - Keep Git Updater-specific plugin header metadata in `bono-arm-api.php`.
+- Production updates use `Primary Branch: stable` and `Release Asset: true`. Only the release workflow advances `stable`, after downloading and verifying the published assets. Development/version preparation stays on `main`.
+- Keep `Tested up to` only in `readme.txt`, never in the PHP plugin header.
 - Keep Git Updater and distribution-channel UI/documentation copy consistent across `bono-arm-api.php`, `README.md`, and `readme.txt`.
 - Do not describe WordPress.org as the default or primary update path unless explicitly requested.
 
@@ -66,9 +68,11 @@ For the next release:
 2. Add `release-notes/X.Y.Z.md` with exact headings `## New Features`, `## Improvements`, `## Bug Fixes`; use `- None.` if a section has no entries. Older releases without this notes format remain unchanged.
 3. Open a PR into `main`, run all required checks, then apply **`release` before merging**. That label explicitly opts the merge into publication. Do not create/push the version tag yourself or use the retired direct-tagging `release.sh` path.
 4. Merge. The workflow verifies the canonical merged PR and exact merge commit, runs all existing reusable quality gates plus release/package guards, checks versions/notes and main ancestry, creates annotated `vX.Y.Z`, and publishes the **exact CI-tested ZIP** with SHA-256 checksum. Build provenance attestation is retained. The release is created as a draft and published only after asset upload succeeds.
-5. Read back the published release and uploaded checksum; a green PR is not evidence that publication completed. Expected ZIP: `bono_arm_api-{version}.zip` under root `bono-arm-api/`.
+5. The workflow downloads the published release ZIP/checksum, verifies the tag commit, notes, GitHub digest and exact tested bytes, then fast-forwards `stable` to the release commit and reads it back. A repository-wide publication lock and ancestry/version guards prevent out-of-order releases. Read back the published release and uploaded checksum; a green PR is not evidence that publication completed. Expected ZIP: `bono_arm_api-{version}.zip` under root `bono-arm-api/`.
 
-If publication fails, manually dispatch **Release merged PR** from `main` with `pr_number`. The PR must be merged into `main` and still carry `release`. Adding the label after merge does not trigger publication, but manual dispatch can release that eligible PR. Matching existing tags may be reused only when they point to the same merge commit. Existing releases/drafts are never overwritten: inspect and explicitly resolve partial drafts before retrying; never move/delete published tags as a retry strategy. Concurrent runs for the same PR are serialized.
+If publication fails, manually dispatch **Release merged PR** from `main` with `pr_number`. The PR must be merged into `main` and still carry `release`. Adding the label after merge does not trigger publication, but manual dispatch can release that eligible PR. Matching existing tags may be reused only when they point to the same merge commit. Existing releases/drafts are never overwritten. A published release may resume only when its tag, notes and downloaded assets match the exact tested artifact. Use **Re-run failed jobs** to retain the original package if publication succeeded but verification/promotion was interrupted; a fresh dispatch rebuilds the ZIP and may refuse an existing release with different bytes. Inspect and explicitly resolve partial drafts before retrying; never move/delete published tags as a retry strategy. All publication jobs are serialized across PRs. Never force-push `stable` or move it before publication verification.
+
+The final result job reports failed/skipped gates as an incomplete release. `release-health.yml` runs every six hours and on manual dispatch to verify that the published release assets, tag, notes and production update branch agree. A green PR or merged version bump never proves publication.
 
 Tags and publication happen in one workflow, avoiding the `GITHUB_TOKEN` tag-event suppression. No PAT or additional secret is required. Only publishing has `contents: write` plus OIDC/attestation permissions; quality jobs retain their own minimum analysis permissions.
 

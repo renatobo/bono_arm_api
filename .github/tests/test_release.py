@@ -40,7 +40,7 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError): release.eligible_pr(pr)
 
     def fixture(self, root):
-        text = f" * Version: 1.0.5\ndefine( '{CONFIG['constant']}', '1.0.5' );\n"
+        text = f" * Version: 1.0.5\nPrimary Branch: {CONFIG['update_branch']}\nRelease Asset: true\ndefine( '{CONFIG['constant']}', '1.0.5' );\n"
         (root / CONFIG['main']).write_text(text)
         if CONFIG['readme']: (root / 'readme.txt').write_text('Stable tag: 1.0.5\nVersion: 1.0.5\n')
         documents = {}
@@ -58,7 +58,10 @@ class ReleaseTests(unittest.TestCase):
     def archive(self, root, text, extra=None):
         path = root / 'dist' / CONFIG['zip'].format(version='1.0.5')
         with zipfile.ZipFile(path, 'w') as archive:
-            for name, data in {CONFIG['main']: text, 'uninstall.php': '<?php', **({'readme.txt': 'Stable tag: 1.0.5'} if CONFIG['readme'] else {})}.items():
+            files = {CONFIG['main']: text, 'uninstall.php': '<?php'}
+            if CONFIG['readme']: files['readme.txt'] = (root / 'readme.txt').read_text()
+            files.update({filename: (root / filename).read_text() for filename, _ in CONFIG.get('specs', [])})
+            for name, data in files.items():
                 archive.writestr(CONFIG['slug'] + '/' + name, data)
             if extra: archive.writestr(*extra)
         return path
@@ -73,6 +76,35 @@ class ReleaseTests(unittest.TestCase):
             root = Path(folder); text = self.fixture(root)
             (root / CONFIG['main']).write_text(text.replace("'1.0.5'", "'1.0.4'"))
             with self.assertRaises(ValueError): release.metadata(root, CONFIG)
+
+    def test_php_tested_up_to_header_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); text = self.fixture(root)
+            (root / CONFIG['main']).write_text('Tested up to: 7.1\n' + text)
+            with self.assertRaisesRegex(ValueError, 'Tested up to'):
+                release.metadata(root, CONFIG)
+
+    def test_unpublished_main_update_branch_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); text = self.fixture(root)
+            (root / CONFIG['main']).write_text(text.replace('Primary Branch: stable', 'Primary Branch: main'))
+            with self.assertRaisesRegex(ValueError, 'Primary Branch'):
+                release.metadata(root, CONFIG)
+
+    def test_source_archive_downloads_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); text = self.fixture(root)
+            (root / CONFIG['main']).write_text(text.replace('Release Asset: true', 'Release Asset: false'))
+            with self.assertRaisesRegex(ValueError, 'release asset'):
+                release.metadata(root, CONFIG)
+
+    def test_packaged_metadata_must_match_bootstrap(self):
+        for filename in ['readme.txt'] + [filename for filename, _ in CONFIG['specs']]:
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder); text = self.fixture(root)
+                p = root / filename; p.write_text(p.read_text().replace('1.0.5', '1.0.4'))
+                with self.assertRaises(ValueError):
+                    release.validate_zip(self.archive(root, text), '1.0.5', CONFIG)
 
     def test_invalid_semver(self):
         with tempfile.TemporaryDirectory() as folder:

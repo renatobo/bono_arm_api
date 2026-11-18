@@ -7,7 +7,7 @@
 
 WordPress plugin that exposes protected REST API endpoints for ARMember payment logs, admin-triggered member activation, and guarded member deletion.
 
-Current version: `2.3.0`
+Current version: `2.3.1`
 
 ## Quick start
 
@@ -78,7 +78,7 @@ Build an installable plugin zip from the repo root:
 ./build.sh
 ```
 
-That creates a Git Updater-compatible release asset like `bono_arm_api-x.y.z.zip`, containing the installable plugin folder `bono_arm_api/`.
+That creates a Git Updater-compatible release asset like `bono_arm_api-x.y.z.zip`, containing the installable plugin folder `bono-arm-api/`.
 
 ## API specs
 
@@ -95,7 +95,11 @@ The repository includes both versioned OpenAPI contracts and the v1 Postman coll
 Prepare matching version metadata and `release-notes/X.Y.Z.md` in a PR into
 `main`. Apply the **`release`** label before merging. GitHub runs the exact
 merge commit through the existing CI gates and publishes its tested ZIP and
-checksum automatically. See `AGENTS.md` for the complete procedure and retries.
+checksum automatically. It downloads the published assets, checks their versions, notes,
+tag commit and checksum against the tested artifact, and only then advances the
+`stable` branch used by Git Updater. A failed release leaves that update branch
+on the previous verified version. Scheduled health checks detect publication drift.
+See `AGENTS.md` for the complete procedure and retries.
 
 ## Authentication
 
@@ -340,8 +344,11 @@ Install Git Updater to receive update notifications and one-click updates from t
 ## Release process
 
 - `readme.txt` keeps the `Stable tag` version
-- GitHub Actions can tag releases from `main`
-- Tagged versions build a plugin zip release asset
+- Labelled PR merges into `main` run quality gates and publish the exact tested ZIP.
+- Production updates track `Primary Branch: stable`, advanced only after publication read-back.
+- Cached Git Updater selections of the former `main` production branch migrate to `stable`; other test branches are preserved.
+- Keep `Tested up to` only in `readme.txt`; the fast release guard rejects it in the PHP header.
+- A release is complete only after its published ZIP, checksum, tag and update branch are verified.
 
 ## Related repositories
 

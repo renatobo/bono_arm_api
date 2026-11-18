@@ -3,9 +3,8 @@
 Plugin Name: Bono API for ARMember
 Plugin URI: https://github.com/renatobo/bono_arm_api
 Description: Capability-controlled REST API access to ARMember payment logs and member management.
-Version: 2.3.0
+Version: 2.3.1
 Requires at least: 6.9
-Tested up to: 7.1
 Requires PHP: 7.4
 Author: Renato Bonomini
 Author URI: https://github.com/renatobo
@@ -15,7 +14,7 @@ License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 GitHub Plugin URI: https://github.com/renatobo/bono_arm_api
-Primary Branch: main
+Primary Branch: stable
 Release Asset: true
 */
 
@@ -23,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BONO_ARM_API_VERSION', '2.3.0' );
+define( 'BONO_ARM_API_VERSION', '2.3.1' );
 define( 'BONO_ARM_API_FILE', __FILE__ );
 define( 'BONO_ARM_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BONO_ARM_API_URL', plugin_dir_url( __FILE__ ) );

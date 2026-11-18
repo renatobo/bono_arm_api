@@ -3,7 +3,7 @@ Contributors: renatobo
 Tags: membership, subscriptions, payments, api, rest-api
 Requires at least: 6.9
 Tested up to: 7.1
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -46,7 +46,8 @@ Features:
 - Returns a `status: 0` dependency message if ARMember tables are unavailable
 
 Automatic updates:
-- This plugin is set up for GitHub-distributed updates through Git Updater.
+- This plugin receives GitHub release updates through Git Updater.
+- The stable update branch advances only after the published ZIP and checksum are verified.
 - WordPress.org can be used as a secondary channel when that listing is in place.
   https://github.com/afragen/git-updater
 
@@ -103,6 +104,9 @@ The plugin includes checked-in API artifacts at:
 The repository includes both versioned OpenAPI contracts and the v1 Postman collection.
 
 == Upgrade Notice ==
+
+= 2.3.1 =
+Repairs the repeated 2.3.0 update offer. Git Updater now follows verified releases on stable. Includes the renewal and badge APIs from 2.3.0; review its upgrade notes when upgrading from 2.2.0.
 
 = 2.3.0 =
 Renewal requests now require payer_name; payment extras use bono_renewal. Update clients and obtain fresh previews. Includes audited reconciliation and privacy tools. Settings is now ARMember BonoAPI.
@@ -172,6 +176,11 @@ ARMember does not index `arm_invoice_id`, so each request scans the whole paymen
 The API responds with `status: 0` and a message indicating that ARMember must be installed and active.
 
 == Changelog ==
+
+= 2.3.1 =
+* Fixed the Plugin Check header error that prevented 2.3.0 publication.
+* Moved production update checks to stable, promoted only after published package verification.
+* Added publication read-back, safe retries, release failure summaries, and scheduled release health checks.
 
 = 2.3.0 =
 * Added audited renewal reconciliation, named verification diagnostics, privacy export/erasure, and payment-first settlement.
