@@ -22,6 +22,13 @@ def eligible_pr(pr):
 
 
 def plugin_version(text, config):
+    if re.search(r'^\s*(?:\*\s*)?Tested up to:', text, re.M | re.I):
+        raise ValueError('Tested up to belongs only in readme.txt, not the PHP header')
+    branch = re.search(r'^\s*(?:\*\s*)?Primary Branch:\s*(\S+)', text, re.M)
+    if not branch or branch[1] != config['update_branch']:
+        raise ValueError('Primary Branch must track the verified update branch')
+    if not re.search(r'^\s*(?:\*\s*)?Release Asset:\s*true\s*$', text, re.M):
+        raise ValueError('Git Updater must use the verified release asset')
     header = re.search(r'^\s*(?:\*\s*)?Version:\s*(\S+)', text, re.M)
     constant = re.search(r"define\(\s*['\"]" + re.escape(config['constant']) + r"['\"]\s*,\s*['\"]([^'\"]+)['\"]", text)
     if not header or not constant or header[1] != constant[1]:
@@ -32,21 +39,25 @@ def plugin_version(text, config):
     return version
 
 
-def version(root, config):
-    value = plugin_version((root / config['main']).read_text(), config)
+def version_files(read_file, config):
+    value = plugin_version(read_file(config['main']), config)
     if config['readme']:
-        text = (root / 'readme.txt').read_text()
+        text = read_file('readme.txt')
         stable = re.search(r'^Stable tag:\s*(\S+)', text, re.M)
         readme_version = re.search(r'^Version:\s*(\S+)', text, re.M)
         if not stable or stable[1] != value or (readme_version and readme_version[1] != value):
             raise ValueError('readme.txt version metadata must match')
     for filename, keys in config.get('specs', []):
-        document = json.loads((root / filename).read_text())
+        document = json.loads(read_file(filename))
         for key in keys:
             document = document[key]
         if document != value:
             raise ValueError(f'{filename} {keys} must match plugin version')
     return value
+
+
+def version(root, config):
+    return version_files(lambda name: (root / name).read_text(), config)
 
 
 def metadata(root, config):
@@ -76,9 +87,9 @@ def validate_zip(path, value, config):
         for required in [config['main'], 'uninstall.php'] + (['readme.txt'] if config['readme'] else []):
             if config['slug'] + '/' + required not in names:
                 raise ValueError('Missing runtime file: ' + required)
-        packaged = archive.read(config['slug'] + '/' + config['main']).decode()
-        if plugin_version(packaged, config) != value:
-            raise ValueError('ZIP bootstrap version differs from source')
+        packaged = version_files(lambda name: archive.read(config['slug'] + '/' + name).decode(), config)
+        if packaged != value:
+            raise ValueError('ZIP version differs from source')
 
 
 def output(key, value):

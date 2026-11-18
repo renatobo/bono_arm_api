@@ -1,6 +1,7 @@
 {
   "main": "bono-arm-api.php",
   "constant": "BONO_ARM_API_VERSION",
+  "update_branch": "stable",
   "slug": "bono-arm-api",
   "zip": "bono_arm_api-{version}.zip",
   "build": "bash build.sh",

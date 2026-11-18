@@ -1,0 +1,32 @@
+name: Published release health
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Inspect the production update branch with current verification tooling
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TOOLING="$RUNNER_TEMP/release-tooling"
+          mkdir "$TOOLING"
+          cp .github/scripts/release.py .github/scripts/publication.py "$TOOLING/"
+          BRANCH="$(python3 -c 'import json; print(json.load(open(".github/release.json"))["update_branch"])')"
+          git checkout --detach "origin/$BRANCH"
+          python3 -B "$TOOLING/publication.py" audit
+          echo 'Verified the published release ZIP, checksum, notes, tag and production update branch.' >> "$GITHUB_STEP_SUMMARY"
