@@ -74,7 +74,7 @@ If publication fails, manually dispatch **Release merged PR** from `main` with `
 
 The final result job reports failed/skipped gates as an incomplete release. `release-health.yml` runs every six hours and on manual dispatch to verify that the published release assets, tag, notes and production update branch agree. A green PR or merged version bump never proves publication.
 
-Tags and publication happen in one workflow, avoiding the `GITHUB_TOKEN` tag-event suppression. No PAT or additional secret is required. Only publishing has `contents: write` plus OIDC/attestation permissions; quality jobs retain their own minimum analysis permissions.
+Tags and publication happen in one workflow, avoiding the `GITHUB_TOKEN` tag-event suppression. No PAT or additional secret is required. Only publishing has `contents: write` plus OIDC/attestation permissions; quality jobs retain their own minimum analysis permissions. Only the Plugin Check analysis job (and its reusable-workflow caller) receives `pull-requests: write` to maintain the PR report; it has no contents write permission.
 
 Release configuration is `.github/release.json`; guard code is `.github/scripts/release.py`; tests run with `python3 -B -m unittest discover -s .github/tests -v`. Package locally with `bash build.sh`, then run `python3 -B .github/scripts/release.py package`. Release ZIPs exclude this tooling, test caches, and agent guides. Do not hand-edit the upload/download handoff to rebuild a different artifact in the publishing job.
 

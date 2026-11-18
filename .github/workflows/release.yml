@@ -40,6 +40,9 @@ jobs:
 
   quality-0:
     needs: resolve
+    permissions:
+      contents: read
+      pull-requests: write
     uses: ./.github/workflows/quality.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
